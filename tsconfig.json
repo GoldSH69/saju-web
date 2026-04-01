@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "saju-engine": ["./saju-engine-lib/index"],
+      "saju-engine/*": ["./saju-engine-lib/*"]
     }
   },
   "include": [

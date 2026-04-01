@@ -1,31 +1,66 @@
-import { createClient } from '@/lib/supabase/server'
+'use client'
 
-export default async function Home() {
-  const supabase = await createClient()
+import { useState } from 'react'
+import SajuForm from '@/components/SajuForm'
+import SajuResult from '@/components/SajuResult'
 
-  // test_messages 테이블에서 데이터 읽기
-  const { data, error } = await supabase
-    .from('test_messages')
-    .select('*')
+export default function Home() {
+  const [result, setResult] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(data: any) {
+    setIsLoading(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      const res = await fetch('/api/saju/calculate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || '계산 실패')
+      }
+
+      const json = await res.json()
+      setResult(json)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
-    <main style={{ padding: '2rem' }}>
-      <h1>🔮 사주명리학 웹서비스</h1>
-      <h2>Supabase 연동 테스트</h2>
+    <div className="max-w-4xl mx-auto px-4 py-8">
+      {/* 헤더 */}
+      <div className="text-center py-6">
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">
+          🔮 무료 사주팔자 계산
+        </h1>
+        <p className="text-slate-500">
+          만세력 기반 정확한 사주 분석
+        </p>
+      </div>
 
-      {error ? (
-        <p style={{ color: 'red' }}>❌ 에러: {error.message}</p>
-      ) : (
-        <div>
-          <p style={{ color: 'green' }}>✅ 연동 성공!</p>
-          <p>데이터 {data?.length}건:</p>
-          <ul>
-            {data?.map((row: any) => (
-              <li key={row.id}>{row.text}</li>
-            ))}
-          </ul>
+      {/* 입력 폼 */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+        <SajuForm onSubmit={handleSubmit} isLoading={isLoading} />
+      </div>
+
+      {/* 에러 */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+          <p className="text-red-600">❌ {error}</p>
         </div>
       )}
-    </main>
+
+      {/* 결과 */}
+      {result && <SajuResult result={result} />}
+    </div>
   )
 }

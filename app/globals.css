@@ -1,26 +1,36 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* 사주 한자 전용 폰트 */
+@layer base {
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+      Roboto, 'Noto Sans KR', sans-serif;
+  }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* 한자 표시 */
+  .hanja {
+    font-family: 'Noto Serif KR', 'Batang', serif;
+    font-weight: 700;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* 오행 색상 */
+@layer utilities {
+  .text-wood { color: #22c55e; }
+  .text-fire { color: #ef4444; }
+  .text-earth { color: #eab308; }
+  .text-metal { color: #a1a1aa; }
+  .text-water { color: #3b82f6; }
+
+  .bg-wood { background-color: #22c55e; }
+  .bg-fire { background-color: #ef4444; }
+  .bg-earth { background-color: #eab308; }
+  .bg-metal { background-color: #a1a1aa; }
+  .bg-water { background-color: #3b82f6; }
+
+  .border-wood { border-color: #22c55e; }
+  .border-fire { border-color: #ef4444; }
+  .border-earth { border-color: #eab308; }
+  .border-metal { border-color: #a1a1aa; }
+  .border-water { border-color: #3b82f6; }
 }
