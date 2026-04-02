@@ -1,20 +1,19 @@
 @import "tailwindcss";
 
-/* 사주 한자 전용 폰트 */
 @layer base {
   body {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI',
       Roboto, 'Noto Sans KR', sans-serif;
   }
 
-  /* 한자 표시 */
+  /* 한자 표시 - Noto Serif KR 900(Black) */
   .hanja {
-    font-family: 'Noto Serif KR', 'Batang', serif;
-    font-weight: 700;
+    font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+    font-weight: 900;
   }
 }
 
-/* 오행 색상 */
+/* 오행 색상 유틸리티 */
 @layer utilities {
   .text-wood { color: #22c55e; }
   .text-fire { color: #ef4444; }

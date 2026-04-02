@@ -2,13 +2,23 @@
 
 import { useState } from 'react'
 
-// ─── 오행 색상 (목녹/화빨/토노/금흰/수검) ───────────────
+// ─── 🔧 FIX 1: 한자→오행 매핑 (대운/세운 색상 보장) ─────
+const CHAR_ELEMENT: Record<string, string> = {
+  '甲': 'wood', '乙': 'wood', '丙': 'fire', '丁': 'fire',
+  '戊': 'earth', '己': 'earth', '庚': 'metal', '辛': 'metal',
+  '壬': 'water', '癸': 'water',
+  '子': 'water', '丑': 'earth', '寅': 'wood', '卯': 'wood',
+  '辰': 'earth', '巳': 'fire', '午': 'fire', '未': 'earth',
+  '申': 'metal', '酉': 'metal', '戌': 'earth', '亥': 'water',
+}
+
+// ─── 🔧 FIX 1: 오행 색상 (전체 border-2 border-black 통일) ─
 const ELEMENT_STYLE: Record<string, { bg: string; text: string }> = {
-  wood:  { bg: 'bg-green-600',  text: 'text-white [text-shadow:_1px_1px_0_rgb(0_0_0),_-1px_-1px_0_rgb(0_0_0),_1px_-1px_0_rgb(0_0_0),_-1px_1px_0_rgb(0_0_0)]' },
-  fire:  { bg: 'bg-red-600',    text: 'text-white [text-shadow:_1px_1px_0_rgb(0_0_0),_-1px_-1px_0_rgb(0_0_0),_1px_-1px_0_rgb(0_0_0),_-1px_1px_0_rgb(0_0_0)]' },
-  earth: { bg: 'bg-yellow-400', text: 'text-white [text-shadow:_1px_1px_0_rgb(0_0_0),_-1px_-1px_0_rgb(0_0_0),_1px_-1px_0_rgb(0_0_0),_-1px_1px_0_rgb(0_0_0)]' },
-  metal: { bg: 'bg-white border border-slate-300', text: 'text-white [text-shadow:_1px_1px_0_rgb(0_0_0),_-1px_-1px_0_rgb(0_0_0),_1px_-1px_0_rgb(0_0_0),_-1px_1px_0_rgb(0_0_0)]' },
-  water: { bg: 'bg-black',      text: 'text-white [text-shadow:_1px_1px_0_rgb(0_0_0),_-1px_-1px_0_rgb(0_0_0),_1px_-1px_0_rgb(0_0_0),_-1px_1px_0_rgb(0_0_0)]' },
+  wood:  { bg: 'bg-green-600 border-2 border-black',  text: 'text-white [text-shadow:_1px_1px_0_rgb(0_0_0),_-1px_-1px_0_rgb(0_0_0),_1px_-1px_0_rgb(0_0_0),_-1px_1px_0_rgb(0_0_0)]' },
+  fire:  { bg: 'bg-red-600 border-2 border-black',    text: 'text-white [text-shadow:_1px_1px_0_rgb(0_0_0),_-1px_-1px_0_rgb(0_0_0),_1px_-1px_0_rgb(0_0_0),_-1px_1px_0_rgb(0_0_0)]' },
+  earth: { bg: 'bg-yellow-400 border-2 border-black', text: 'text-white [text-shadow:_1px_1px_0_rgb(0_0_0),_-1px_-1px_0_rgb(0_0_0),_1px_-1px_0_rgb(0_0_0),_-1px_1px_0_rgb(0_0_0)]' },
+  metal: { bg: 'bg-white border-2 border-black',      text: 'text-white [text-shadow:_1px_1px_0_rgb(0_0_0),_-1px_-1px_0_rgb(0_0_0),_1px_-1px_0_rgb(0_0_0),_-1px_1px_0_rgb(0_0_0)]' },
+  water: { bg: 'bg-black border-2 border-black',      text: 'text-white [text-shadow:_1px_1px_0_rgb(0_0_0),_-1px_-1px_0_rgb(0_0_0),_1px_-1px_0_rgb(0_0_0),_-1px_1px_0_rgb(0_0_0)]' },
 }
 
 const ELEMENT_KO: Record<string, string> = {
@@ -34,7 +44,9 @@ function HanjaCell({ char, element }: { char: string; element: string }) {
 
 // ─── 소형 한자 셀 (대운/세운용) ─────────────────────────
 function SmallHanjaCell({ char, element, size = 'normal' }: { char: string; element: string; size?: 'normal' | 'small' }) {
-  const style = ELEMENT_STYLE[element] || ELEMENT_STYLE.earth
+  // 🔧 FIX 1: CHAR_ELEMENT로 확실한 오행 매핑
+  const resolvedElement = CHAR_ELEMENT[char] || element || 'earth'
+  const style = ELEMENT_STYLE[resolvedElement] || ELEMENT_STYLE.earth
   const sizeClass = size === 'small'
     ? 'w-8 h-8 sm:w-10 sm:h-10 text-base sm:text-lg'
     : 'w-10 h-10 sm:w-12 sm:h-12 text-lg sm:text-xl'
@@ -58,10 +70,12 @@ function getCurrentDaewoonIndex(entries: any[]): number {
   return -1
 }
 
-// ─── 지지의 주기적(main) 십성 가져오기 ──────────────────
+// ─── 🔧 FIX 2: 지지 본기(정기) 십성 가져오기 ───────────
 function getMainBranchStar(branchStars: any[]): string {
   if (!branchStars || branchStars.length === 0) return ''
-  return branchStars[0]?.tenStar || ''
+  // 배열 순서: [여기(초기), 중기, 정기(본기)]
+  // 본기 = 마지막 요소
+  return branchStars[branchStars.length - 1]?.tenStar || ''
 }
 
 // ─── 4기둥 테이블 ────────────────────────────────────────
@@ -220,19 +234,25 @@ function FiveElementBar({ counts }: { counts: Record<string, number> }) {
   )
 }
 
-// ─── 십성 분포 ───────────────────────────────────────────
+// ─── 🔧 FIX 3: 십성 분포 (비화→비겁) ───────────────────
 function TenStarSection({ tenStars }: { tenStars: any }) {
   if (!tenStars) return null
 
   const categories = [
-    { key: '비화', label: '비화', sub: '比和', stars: ['비견', '겁재'], color: 'bg-yellow-50 border-yellow-300 text-yellow-800' },
+    { key: '비겁', label: '비겁', sub: '比劫', stars: ['비견', '겁재'], color: 'bg-yellow-50 border-yellow-300 text-yellow-800' },
     { key: '식상', label: '식상', sub: '食傷', stars: ['식신', '상관'], color: 'bg-green-50 border-green-300 text-green-800' },
     { key: '재성', label: '재성', sub: '財星', stars: ['편재', '정재'], color: 'bg-blue-50 border-blue-300 text-blue-800' },
     { key: '관성', label: '관성', sub: '官星', stars: ['편관', '정관'], color: 'bg-red-50 border-red-300 text-red-800' },
     { key: '인성', label: '인성', sub: '印星', stars: ['편인', '정인'], color: 'bg-purple-50 border-purple-300 text-purple-800' },
   ]
 
-  const { starCount, categoryCount, yearStem, monthStem, hourStem } = tenStars
+  // 🔧 FIX 3: categoryCount에서 '비화'→'비겁' 키 매핑
+  const categoryCount = { ...tenStars.categoryCount }
+  if (categoryCount['비화'] !== undefined && categoryCount['비겁'] === undefined) {
+    categoryCount['비겁'] = categoryCount['비화']
+  }
+
+  const { starCount, yearStem, monthStem, hourStem } = tenStars
 
   const positionStars = [
     { pos: '년간', star: yearStem?.tenStar, target: yearStem?.target },
@@ -288,6 +308,10 @@ function TenStarSection({ tenStars }: { tenStars: any }) {
                 item.stars.map((s: any, i: number) => (
                   <div key={i} className="text-slate-700">
                     {s.target} → <span className="font-medium">{s.tenStar}</span>
+                    {/* 🔧 FIX 2: 본기 표시 */}
+                    {i === item.stars.length - 1 && (
+                      <span className="text-indigo-500 text-[9px] ml-1">본기</span>
+                    )}
                   </div>
                 ))
               ) : (
@@ -373,8 +397,10 @@ function DaewoonSection({ daewoon, birthYear, input }: { daewoon: any; birthYear
           {daewoon.entries.map((entry: any, i: number) => {
             const isCurrent = i === currentIndex
             const isSelected = i === selectedIndex
-            const stemEl = getStemElement(entry)
-            const branchEl = getBranchElement(entry)
+            // 🔧 FIX 1: 한자로 오행 확실히 결정
+            const chars = getGanjiChars(entry)
+            const stemEl = CHAR_ELEMENT[chars[0]] || getStemElement(entry)
+            const branchEl = CHAR_ELEMENT[chars[1]] || getBranchElement(entry)
 
             return (
               <button
@@ -400,11 +426,11 @@ function DaewoonSection({ daewoon, birthYear, input }: { daewoon: any; birthYear
 
                 {/* 천간 */}
                 <div className="flex justify-center mb-0.5">
-                  <SmallHanjaCell char={getGanjiChars(entry)[0]} element={stemEl} />
+                  <SmallHanjaCell char={chars[0]} element={stemEl} />
                 </div>
                 {/* 지지 */}
                 <div className="flex justify-center">
-                  <SmallHanjaCell char={getGanjiChars(entry)[1]} element={branchEl} />
+                  <SmallHanjaCell char={chars[1]} element={branchEl} />
                 </div>
 
                 <div className={`text-[10px] mt-1 ${isSelected ? 'text-indigo-700 font-medium' : 'text-slate-500'}`}>
@@ -447,12 +473,13 @@ function DaewoonSection({ daewoon, birthYear, input }: { daewoon: any; birthYear
                   {fortunes.map((f: any) => {
                     const isCurrentYear = f.year === currentYear
                     const isSelectedYear = f.year === selectedFortuneYear
-                    const stemEl = f.fortune?.fortune?.stemElement || 'earth'
-                    const branchEl = f.fortune?.fortune?.branchElement || 'earth'
                     const ganjiChar = f.fortune?.fortune?.ganjiChar || ''
                     const ganjiName = f.fortune?.fortune?.ganjiName || ''
                     const stemChar = ganjiChar[0] || ''
                     const branchChar = ganjiChar[1] || ''
+                    // 🔧 FIX 1: 한자로 오행 확실히 결정
+                    const stemEl = CHAR_ELEMENT[stemChar] || f.fortune?.fortune?.stemElement || 'earth'
+                    const branchEl = CHAR_ELEMENT[branchChar] || f.fortune?.fortune?.branchElement || 'earth'
 
                     return (
                       <button

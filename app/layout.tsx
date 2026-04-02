@@ -15,6 +15,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
+      <head>
+        {/* 한자 전용 웹폰트 (Noto Serif KR - Google Fonts, OFL 무료) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         <div className="min-h-screen flex flex-col bg-slate-50">
           <Navigation />
