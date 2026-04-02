@@ -82,50 +82,44 @@ export default function SajuForm({ onSubmit, isLoading }: SajuFormProps) {
         </div>
       </div>
 
-      {/* 생년월일 */}
+      {/* 생년월일 - 3칸 동일 너비 */}
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-2">생년월일 (양력)</label>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {/* 년 */}
-          <div className="flex-1">
-            <select
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              className="w-full px-3 py-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            >
-              {Array.from({ length: currentYear - 1920 + 1 }, (_, i) => currentYear - i).map(y => (
-                <option key={y} value={y}>{y}년</option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            className="w-full px-3 py-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          >
+            {Array.from({ length: currentYear - 1920 + 1 }, (_, i) => currentYear - i).map(y => (
+              <option key={y} value={y}>{y}년</option>
+            ))}
+          </select>
           {/* 월 */}
-          <div className="w-24">
-            <select
-              value={month}
-              onChange={(e) => setMonth(Number(e.target.value))}
-              className="w-full px-3 py-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                <option key={m} value={m}>{m}월</option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={month}
+            onChange={(e) => setMonth(Number(e.target.value))}
+            className="w-full px-3 py-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+              <option key={m} value={m}>{m}월</option>
+            ))}
+          </select>
           {/* 일 */}
-          <div className="w-24">
-            <select
-              value={Math.min(day, maxDay)}
-              onChange={(e) => setDay(Number(e.target.value))}
-              className="w-full px-3 py-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-            >
-              {Array.from({ length: maxDay }, (_, i) => i + 1).map(d => (
-                <option key={d} value={d}>{d}일</option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={Math.min(day, maxDay)}
+            onChange={(e) => setDay(Number(e.target.value))}
+            className="w-full px-3 py-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          >
+            {Array.from({ length: maxDay }, (_, i) => i + 1).map(d => (
+              <option key={d} value={d}>{d}일</option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* 출생시간 */}
+      {/* 출생시간 - 2칸 동일 너비 */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="text-sm font-medium text-slate-700">출생시간</label>
@@ -140,35 +134,31 @@ export default function SajuForm({ onSubmit, isLoading }: SajuFormProps) {
           </label>
         </div>
         {!birthTimeUnknown && (
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {/* 시 */}
-            <div className="flex-1">
-              <select
-                value={hour}
-                onChange={(e) => setHour(Number(e.target.value))}
-                className="w-full px-3 py-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              >
-                {Array.from({ length: 24 }, (_, i) => i).map(h => (
-                  <option key={h} value={h}>
-                    {String(h).padStart(2, '0')}시
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={hour}
+              onChange={(e) => setHour(Number(e.target.value))}
+              className="w-full px-3 py-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            >
+              {Array.from({ length: 24 }, (_, i) => i).map(h => (
+                <option key={h} value={h}>
+                  {String(h).padStart(2, '0')}시
+                </option>
+              ))}
+            </select>
             {/* 분 */}
-            <div className="flex-1">
-              <select
-                value={minute}
-                onChange={(e) => setMinute(Number(e.target.value))}
-                className="w-full px-3 py-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              >
-                {Array.from({ length: 12 }, (_, i) => i * 5).map(m => (
-                  <option key={m} value={m}>
-                    {String(m).padStart(2, '0')}분
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              value={minute}
+              onChange={(e) => setMinute(Number(e.target.value))}
+              className="w-full px-3 py-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            >
+              {Array.from({ length: 12 }, (_, i) => i * 5).map(m => (
+                <option key={m} value={m}>
+                  {String(m).padStart(2, '0')}분
+                </option>
+              ))}
+            </select>
           </div>
         )}
       </div>
