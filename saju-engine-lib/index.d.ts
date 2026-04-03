@@ -24,4 +24,10 @@ export type { YearlyFortuneResult, MonthlyFortuneResult, DailyFortuneResult, } f
 export type { YongsinResult, YongsinMethod, YongsinOptions, } from './saju/yongsin';
 export type { StemCombination, BranchClash, BranchCombine, BranchPunishment, BranchHarm, InteractionResult, FortuneTenStar, } from './saju/interactions';
 export { analyzeInteractions } from './saju/interactions';
+export { calculateGongmangPair, isGongmang, analyzeGongmang, checkFortuneGongmang, } from './saju/gongmang';
+export type { GongmangPair, BranchGongmangStatus, GongmangRelease, FortuneGongmangResult, GongmangAnalysis, } from './saju/gongmang';
+export { getGwiinBranches, isGwiin, analyzeGwiin, checkFortuneGwiin, } from './saju/gwiin';
+export type { GwiinPair, BranchGwiinStatus, FortuneGwiinResult, GwiinAnalysis, } from './saju/gwiin';
+export { generateInterpretation, getDayStemText, getFiveElementText, analyzeFiveElementTexts, getTenStarText, analyzeTenStarTexts, getStrengthText, getDailyFortuneText, getShortDayStemInterpretation, getShortStrengthInterpretation, getShortDailyFortune, DAY_STEM_TEXTS, FIVE_ELEMENT_TEXTS, TEN_STAR_TEXTS, STRENGTH_TEXTS, DAILY_FORTUNE_TEXTS, } from './saju/interpretations';
+export type { InterpretationResult, DayStemText, FiveElementText, TenStarText, StrengthText, DailyFortuneText, } from './saju/interpretations';
 //# sourceMappingURL=index.d.ts.map

@@ -22,6 +22,8 @@ const strengthScore_1 = require("./strengthScore");
 const daewoon_1 = require("./daewoon");
 const fortune_1 = require("./fortune");
 const yongsin_1 = require("./yongsin");
+const gongmang_1 = require("./gongmang");
+const gwiin_1 = require("./gwiin");
 // ─── 일주 계산 헬퍼 (JDN 기반) ──────────────────────────
 const BASE_JDN = (0, dayPillar_1.getJulianDayNumber)(2024, 1, 1); // 2024-01-01 = 甲子 = index 0
 function calculateDayPillarFromDate(year, month, day) {
@@ -234,6 +236,10 @@ function calculateSaju(input) {
         warnings.push('출생 시간 미입력: 대운 시작 나이가 부정확할 수 있습니다.');
         daewoon = (0, daewoon_1.calculateDaewoon)(effectiveYear, effectiveMonth, effectiveDay, 12, 0, gender, yearPillar, monthPillar, dayPillar, { year: yearPillar, month: monthPillar, day: dayPillar, hour: null }, { count: input.daewoonCount ?? 10 });
     }
+    // ═══ ⑬-2 공망 분석 ═══
+    const gongmang = (0, gongmang_1.analyzeGongmang)(yearPillar.heavenlyStem.index, yearPillar.earthlyBranch.index, monthPillar.earthlyBranch.index, dayStemIndex, dayPillar.earthlyBranch.index, hourPillar ? hourPillar.earthlyBranch.index : null);
+    // ═══ ⑬-3 천을귀인 분석 ═══
+    const gwiin = (0, gwiin_1.analyzeGwiin)(dayStemIndex, yearPillar.earthlyBranch.index, monthPillar.earthlyBranch.index, dayPillar.earthlyBranch.index, hourPillar ? hourPillar.earthlyBranch.index : null);
     // ═══ ⑭ 운세 (선택) ═══
     let fortune = null;
     if (input.fortuneTargetYear) {
@@ -287,6 +293,8 @@ function calculateSaju(input) {
         yongsin,
         daewoon,
         fortune,
+        gongmang,
+        gwiin,
         monthSolarTerm: {
             name: monthResult.solarTermName,
             dateTime: monthResult.solarTermDateTime,
@@ -368,6 +376,18 @@ function formatSajuResult(result) {
         lines.push(`  ■ 대운: ${dw.direction === 'forward' ? '순행' : '역행'} (시작: ${dw.startAge.description})`);
         const dwLine = dw.entries.slice(0, 8).map(e => `${e.ganjiChar}(${e.startAge}~${e.endAge})`).join(' → ');
         lines.push(`    ${dwLine}`);
+        lines.push('');
+    }
+    // 공망 출력
+    if (result.gongmang) {
+        lines.push('  ■ 공망(空亡):');
+        result.gongmang.summary.forEach(s => lines.push(`    ${s}`));
+        lines.push('');
+    }
+    // 천을귀인 출력
+    if (result.gwiin) {
+        lines.push('  ■ 천을귀인(天乙貴人):');
+        result.gwiin.summary.forEach(s => lines.push(`    ${s}`));
         lines.push('');
     }
     if (result.fortune) {
@@ -456,6 +476,31 @@ function toResultJson(result) {
                 endYear: e.endYear,
                 tenStar: e.tenStar,
             })),
+        } : null,
+        gongmang: result.gongmang ? {
+            yearGongmang: {
+                sunName: result.gongmang.yearGongmang.sunName,
+                chars: result.gongmang.yearGongmang.chars,
+                names: result.gongmang.yearGongmang.names,
+            },
+            dayGongmang: {
+                sunName: result.gongmang.dayGongmang.sunName,
+                chars: result.gongmang.dayGongmang.chars,
+                names: result.gongmang.dayGongmang.names,
+            },
+            branchStatus: result.gongmang.branchStatus,
+            summary: result.gongmang.summary,
+        } : null,
+        gwiin: result.gwiin ? {
+            gwiinPair: {
+                chars: result.gwiin.gwiinPair.chars,
+                names: result.gwiin.gwiinPair.names,
+                elements: result.gwiin.gwiinPair.elements,
+            },
+            branchStatus: result.gwiin.branchStatus,
+            gwiinCount: result.gwiin.gwiinCount,
+            gwiinPositions: result.gwiin.gwiinPositions,
+            summary: result.gwiin.summary,
         } : null,
         monthSolarTerm: result.monthSolarTerm,
         meta: result.meta,

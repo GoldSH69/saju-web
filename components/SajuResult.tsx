@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-// ─── 🔧 FIX 1: 한자→오행 매핑 (대운/세운 색상 보장) ─────
+// ─── 한자→오행 매핑 ─────────────────────────────────────
 const CHAR_ELEMENT: Record<string, string> = {
   '甲': 'wood', '乙': 'wood', '丙': 'fire', '丁': 'fire',
   '戊': 'earth', '己': 'earth', '庚': 'metal', '辛': 'metal',
@@ -12,7 +12,6 @@ const CHAR_ELEMENT: Record<string, string> = {
   '申': 'metal', '酉': 'metal', '戌': 'earth', '亥': 'water',
 }
 
-// ─── 🔧 FIX 1: 오행 색상 (전체 border-2 border-black 통일) ─
 const ELEMENT_STYLE: Record<string, { bg: string; text: string }> = {
   wood:  { bg: 'bg-green-600 border-2 border-black',  text: 'text-white [text-shadow:_1px_1px_0_rgb(0_0_0),_-1px_-1px_0_rgb(0_0_0),_1px_-1px_0_rgb(0_0_0),_-1px_1px_0_rgb(0_0_0)]' },
   fire:  { bg: 'bg-red-600 border-2 border-black',    text: 'text-white [text-shadow:_1px_1px_0_rgb(0_0_0),_-1px_-1px_0_rgb(0_0_0),_1px_-1px_0_rgb(0_0_0),_-1px_1px_0_rgb(0_0_0)]' },
@@ -30,21 +29,41 @@ const BAR_COLORS: Record<string, string> = {
   metal: 'bg-gray-300', water: 'bg-black',
 }
 
-// ─── 한자 셀 컴포넌트 (오행 색상 적용) ──────────────────
-function HanjaCell({ char, element }: { char: string; element: string }) {
-  const style = ELEMENT_STYLE[element] || ELEMENT_STYLE.earth
+const BRANCH_CHARS = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥']
+
+// ─── 줄바꿈 텍스트 렌더링 ───────────────────────────────
+function TextWithLineBreaks({ text, className }: { text: string; className?: string }) {
+  const paragraphs = text.split('\n\n')
   return (
-    <div className={`w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-md ${style.bg}`}>
-      <span className={`hanja text-2xl sm:text-3xl font-bold ${style.text}`}>
-        {char}
-      </span>
+    <div className={className}>
+      {paragraphs.map((para, i) => {
+        const lines = para.split('\n')
+        return (
+          <p key={i} className={i > 0 ? 'mt-3' : ''}>
+            {lines.map((line, j) => (
+              <span key={j}>
+                {j > 0 && <br />}
+                {line}
+              </span>
+            ))}
+          </p>
+        )
+      })}
     </div>
   )
 }
 
-// ─── 소형 한자 셀 (대운/세운용) ─────────────────────────
+// ─── 한자 셀 컴포넌트 ───────────────────────────────────
+function HanjaCell({ char, element }: { char: string; element: string }) {
+  const style = ELEMENT_STYLE[element] || ELEMENT_STYLE.earth
+  return (
+    <div className={`w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-md ${style.bg}`}>
+      <span className={`hanja text-2xl sm:text-3xl font-bold ${style.text}`}>{char}</span>
+    </div>
+  )
+}
+
 function SmallHanjaCell({ char, element, size = 'normal' }: { char: string; element: string; size?: 'normal' | 'small' }) {
-  // 🔧 FIX 1: CHAR_ELEMENT로 확실한 오행 매핑
   const resolvedElement = CHAR_ELEMENT[char] || element || 'earth'
   const style = ELEMENT_STYLE[resolvedElement] || ELEMENT_STYLE.earth
   const sizeClass = size === 'small'
@@ -57,7 +76,7 @@ function SmallHanjaCell({ char, element, size = 'normal' }: { char: string; elem
   )
 }
 
-// ─── 현재 나이/대운 인덱스 ───────────────────────────────
+// ─── 유틸 함수 ──────────────────────────────────────────
 function getCurrentAge(birthYear: number): number {
   return new Date().getFullYear() - birthYear
 }
@@ -70,123 +89,77 @@ function getCurrentDaewoonIndex(entries: any[]): number {
   return -1
 }
 
-// ─── 🔧 FIX 2: 지지 본기(정기) 십성 가져오기 ───────────
 function getMainBranchStar(branchStars: any[]): string {
   if (!branchStars || branchStars.length === 0) return ''
-  // 배열 순서: [여기(초기), 중기, 정기(본기)]
-  // 본기 = 마지막 요소
   return branchStars[branchStars.length - 1]?.tenStar || ''
 }
 
+function getStemElement(entry: any): string {
+  return entry.tenStar?.stemElement || entry.stemElement || 'earth'
+}
+
+function getBranchElement(entry: any): string {
+  return entry.tenStar?.branchElement || entry.branchElement || 'earth'
+}
+
+function getGanjiChars(entry: any): [string, string] {
+  const ganji = entry.ganji || entry.ganjiChar || ''
+  return [ganji[0] || '?', ganji[1] || '?']
+}
+
 // ─── 4기둥 테이블 ────────────────────────────────────────
-function FourPillarsTable({ pillars, tenStars, dayStem }: { pillars: any; tenStars: any; dayStem: any }) {
+function FourPillarsTable({ pillars, tenStars }: { pillars: any; tenStars: any }) {
   const cols = [
-    {
-      label: '시주',
-      pillar: pillars.hour,
-      stemStar: tenStars?.hourStem?.tenStar || '',
-      branchStar: getMainBranchStar(tenStars?.hourBranchStars),
-    },
-    {
-      label: '일주',
-      pillar: pillars.day,
-      stemStar: '일간(나)',
-      branchStar: getMainBranchStar(tenStars?.dayBranchStars),
-    },
-    {
-      label: '월주',
-      pillar: pillars.month,
-      stemStar: tenStars?.monthStem?.tenStar || '',
-      branchStar: getMainBranchStar(tenStars?.monthBranchStars),
-    },
-    {
-      label: '년주',
-      pillar: pillars.year,
-      stemStar: tenStars?.yearStem?.tenStar || '',
-      branchStar: getMainBranchStar(tenStars?.yearBranchStars),
-    },
+    { label: '시주', pillar: pillars.hour, stemStar: tenStars?.hourStem?.tenStar || '', branchStar: getMainBranchStar(tenStars?.hourBranchStars) },
+    { label: '일주', pillar: pillars.day, stemStar: '일간(나)', branchStar: getMainBranchStar(tenStars?.dayBranchStars) },
+    { label: '월주', pillar: pillars.month, stemStar: tenStars?.monthStem?.tenStar || '', branchStar: getMainBranchStar(tenStars?.monthBranchStars) },
+    { label: '년주', pillar: pillars.year, stemStar: tenStars?.yearStem?.tenStar || '', branchStar: getMainBranchStar(tenStars?.yearBranchStars) },
   ]
 
   return (
     <div className="overflow-x-auto">
       <table className="mx-auto border-collapse">
-        {/* 헤더: 시주/일주/월주/년주 */}
         <thead>
           <tr>
             {cols.map((col, i) => (
-              <th key={i} className="px-2 sm:px-4 pb-1 text-xs sm:text-sm font-medium text-slate-500">
-                {col.label}
-              </th>
+              <th key={i} className="px-2 sm:px-4 pb-1 text-xs sm:text-sm font-medium text-slate-500">{col.label}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {/* 행1: 천간 십성 */}
-          <tr>
-            {cols.map((col, i) => (
-              <td key={i} className="px-2 sm:px-4 py-0.5 text-center">
-                <span className={`text-xs sm:text-sm ${i === 1 ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}>
-                  {col.pillar ? col.stemStar : ''}
-                </span>
-              </td>
-            ))}
-          </tr>
-
-          {/* 행2: 천간 한자 */}
-          <tr>
-            {cols.map((col, i) => (
-              <td key={i} className="px-2 sm:px-4 py-0.5">
-                <div className="flex justify-center">
-                  {col.pillar ? (
-                    <HanjaCell char={col.pillar.stem.char} element={col.pillar.stem.element} />
-                  ) : (
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-md border-2 border-dashed border-slate-200">
-                      <span className="text-slate-300 text-xs">?</span>
-                    </div>
-                  )}
-                </div>
-              </td>
-            ))}
-          </tr>
-
-          {/* 행3: 지지 한자 */}
-          <tr>
-            {cols.map((col, i) => (
-              <td key={i} className="px-2 sm:px-4 py-0.5">
-                <div className="flex justify-center">
-                  {col.pillar ? (
-                    <HanjaCell char={col.pillar.branch.char} element={col.pillar.branch.element} />
-                  ) : (
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-md border-2 border-dashed border-slate-200">
-                      <span className="text-slate-300 text-xs">?</span>
-                    </div>
-                  )}
-                </div>
-              </td>
-            ))}
-          </tr>
-
-          {/* 행4: 지지 십성 */}
-          <tr>
-            {cols.map((col, i) => (
-              <td key={i} className="px-2 sm:px-4 py-0.5 text-center">
-                <span className="text-xs sm:text-sm text-slate-500">
-                  {col.pillar ? col.branchStar : ''}
-                </span>
-              </td>
-            ))}
-          </tr>
-
-          {/* 행5: 간지 한글 */}
-          <tr>
-            {cols.map((col, i) => (
-              <td key={i} className="px-2 sm:px-4 pt-1 text-center">
-                <span className="text-[10px] sm:text-xs text-slate-400">
-                  {col.pillar ? col.pillar.ganjiName : ''}
-                </span>
-              </td>
-            ))}
-          </tr>
+          <tr>{cols.map((col, i) => (
+            <td key={i} className="px-2 sm:px-4 py-0.5 text-center">
+              <span className={`text-xs sm:text-sm ${i === 1 ? 'text-indigo-600 font-bold' : 'text-slate-500'}`}>{col.pillar ? col.stemStar : ''}</span>
+            </td>
+          ))}</tr>
+          <tr>{cols.map((col, i) => (
+            <td key={i} className="px-2 sm:px-4 py-0.5">
+              <div className="flex justify-center">
+                {col.pillar ? <HanjaCell char={col.pillar.stem.char} element={col.pillar.stem.element} /> : (
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-md border-2 border-dashed border-slate-200"><span className="text-slate-300 text-xs">?</span></div>
+                )}
+              </div>
+            </td>
+          ))}</tr>
+          <tr>{cols.map((col, i) => (
+            <td key={i} className="px-2 sm:px-4 py-0.5">
+              <div className="flex justify-center">
+                {col.pillar ? <HanjaCell char={col.pillar.branch.char} element={col.pillar.branch.element} /> : (
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-md border-2 border-dashed border-slate-200"><span className="text-slate-300 text-xs">?</span></div>
+                )}
+              </div>
+            </td>
+          ))}</tr>
+          <tr>{cols.map((col, i) => (
+            <td key={i} className="px-2 sm:px-4 py-0.5 text-center">
+              <span className="text-xs sm:text-sm text-slate-500">{col.pillar ? col.branchStar : ''}</span>
+            </td>
+          ))}</tr>
+          <tr>{cols.map((col, i) => (
+            <td key={i} className="px-2 sm:px-4 pt-1 text-center">
+              <span className="text-[10px] sm:text-xs text-slate-400">{col.pillar ? col.pillar.ganjiName : ''}</span>
+            </td>
+          ))}</tr>
         </tbody>
       </table>
     </div>
@@ -198,7 +171,6 @@ function FiveElementBar({ counts }: { counts: Record<string, number> }) {
   const total = Object.values(counts).reduce((a, b) => a + b, 0)
   if (total === 0) return null
   const elements = ['wood', 'fire', 'earth', 'metal', 'water']
-
   return (
     <div>
       <div className="flex rounded-full overflow-hidden h-7 sm:h-8 mb-3">
@@ -207,13 +179,8 @@ function FiveElementBar({ counts }: { counts: Record<string, number> }) {
           if (count === 0) return null
           const pct = (count / total) * 100
           return (
-            <div
-              key={el}
-              className={`${BAR_COLORS[el]} flex items-center justify-center text-white text-xs font-bold`}
-              style={{ width: `${pct}%`, minWidth: count > 0 ? '24px' : '0' }}
-            >
-              {count}
-            </div>
+            <div key={el} className={`${BAR_COLORS[el]} flex items-center justify-center text-white text-xs font-bold`}
+              style={{ width: `${pct}%`, minWidth: count > 0 ? '24px' : '0' }}>{count}</div>
           )
         })}
       </div>
@@ -223,9 +190,7 @@ function FiveElementBar({ counts }: { counts: Record<string, number> }) {
           return (
             <div key={el} className="flex items-center gap-1">
               <span className={`w-3 h-3 rounded-full ${BAR_COLORS[el]} ${el === 'metal' ? 'border border-slate-400' : ''}`}></span>
-              <span className={count === 0 ? 'text-slate-300' : 'text-slate-600'}>
-                {ELEMENT_KO[el]} {count}
-              </span>
+              <span className={count === 0 ? 'text-slate-300' : 'text-slate-600'}>{ELEMENT_KO[el]} {count}</span>
             </div>
           )
         })}
@@ -234,10 +199,9 @@ function FiveElementBar({ counts }: { counts: Record<string, number> }) {
   )
 }
 
-// ─── 🔧 FIX 3: 십성 분포 (비화→비겁) ───────────────────
+// ─── 십성 분포 ──────────────────────────────────────────
 function TenStarSection({ tenStars }: { tenStars: any }) {
   if (!tenStars) return null
-
   const categories = [
     { key: '비겁', label: '비겁', sub: '比劫', stars: ['비견', '겁재'], color: 'bg-yellow-50 border-yellow-300 text-yellow-800' },
     { key: '식상', label: '식상', sub: '食傷', stars: ['식신', '상관'], color: 'bg-green-50 border-green-300 text-green-800' },
@@ -245,21 +209,16 @@ function TenStarSection({ tenStars }: { tenStars: any }) {
     { key: '관성', label: '관성', sub: '官星', stars: ['편관', '정관'], color: 'bg-red-50 border-red-300 text-red-800' },
     { key: '인성', label: '인성', sub: '印星', stars: ['편인', '정인'], color: 'bg-purple-50 border-purple-300 text-purple-800' },
   ]
-
-  // 🔧 FIX 3: categoryCount에서 '비화'→'비겁' 키 매핑
   const categoryCount = { ...tenStars.categoryCount }
   if (categoryCount['비화'] !== undefined && categoryCount['비겁'] === undefined) {
     categoryCount['비겁'] = categoryCount['비화']
   }
-
   const { starCount, yearStem, monthStem, hourStem } = tenStars
-
   const positionStars = [
     { pos: '년간', star: yearStem?.tenStar, target: yearStem?.target },
     { pos: '월간', star: monthStem?.tenStar, target: monthStem?.target },
     { pos: '시간', star: hourStem?.tenStar, target: hourStem?.target },
   ]
-
   const branchPositions = [
     { pos: '년지', stars: tenStars.yearBranchStars },
     { pos: '월지', stars: tenStars.monthBranchStars },
@@ -276,28 +235,22 @@ function TenStarSection({ tenStars }: { tenStars: any }) {
             <div className="text-[9px] text-slate-400">{cat.sub}</div>
             <div className="text-xl sm:text-2xl font-bold my-1">{categoryCount[cat.key] || 0}</div>
             <div className="text-[9px] sm:text-[10px] opacity-80 space-y-0.5">
-              {cat.stars.map(s => (
-                <div key={s}>{s} {starCount[s] || 0}</div>
-              ))}
+              {cat.stars.map(s => (<div key={s}>{s} {starCount[s] || 0}</div>))}
             </div>
           </div>
         ))}
       </div>
-
       <div className="bg-slate-50 rounded-xl p-3">
         <div className="text-xs font-medium text-slate-600 mb-2">천간 십성</div>
         <div className="grid grid-cols-3 gap-1.5 text-xs">
           {positionStars.map(item => (
             <div key={item.pos} className="flex justify-between bg-white rounded-lg px-3 py-2">
               <span className="text-slate-500">{item.pos}</span>
-              <span className="font-medium text-slate-800">
-                {item.target ? `${item.target} → ${item.star}` : '-'}
-              </span>
+              <span className="font-medium text-slate-800">{item.target ? `${item.target} → ${item.star}` : '-'}</span>
             </div>
           ))}
         </div>
       </div>
-
       <div className="bg-slate-50 rounded-xl p-3">
         <div className="text-xs font-medium text-slate-600 mb-2">지지 십성 (지장간)</div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-xs">
@@ -308,19 +261,352 @@ function TenStarSection({ tenStars }: { tenStars: any }) {
                 item.stars.map((s: any, i: number) => (
                   <div key={i} className="text-slate-700">
                     {s.target} → <span className="font-medium">{s.tenStar}</span>
-                    {/* 🔧 FIX 2: 본기 표시 */}
-                    {i === item.stars.length - 1 && (
-                      <span className="text-indigo-500 text-[9px] ml-1">본기</span>
-                    )}
+                    {i === item.stars.length - 1 && (<span className="text-indigo-500 text-[9px] ml-1">본기</span>)}
                   </div>
                 ))
-              ) : (
-                <div className="text-slate-300">-</div>
-              )}
+              ) : (<div className="text-slate-300">-</div>)}
             </div>
           ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── 일간 성격 해석 ─────────────────────────────────────
+function DayStemInterpretation({ interp }: { interp: any }) {
+  if (!interp?.dayStem) return null
+  const ds = interp.dayStem
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">🧑 일간 성격 — {ds.symbol} {ds.char}({ds.name})</h2>
+      <div className="bg-indigo-50 rounded-xl p-4 mb-3">
+        <TextWithLineBreaks text={ds.short} className="text-sm sm:text-base text-slate-800 font-medium leading-relaxed" />
+      </div>
+      <div className="bg-slate-50 rounded-xl p-4">
+        <TextWithLineBreaks text={ds.detail} className="text-xs sm:text-sm text-slate-600 leading-relaxed" />
+      </div>
+      <div className="flex flex-wrap gap-1.5 mt-3">
+        {ds.keywords.map((kw: string, i: number) => (
+          <span key={i} className="px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">#{kw}</span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── 오행 해석 ──────────────────────────────────────────
+function FiveElementInterpretation({ interp }: { interp: any }) {
+  if (!interp?.fiveElements) return null
+  const fe = interp.fiveElements
+  if (fe.excess.length === 0 && fe.lack.length === 0) return null
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">🌿 오행 분석</h2>
+      {fe.excess.length > 0 && (
+        <div className="mb-3">
+          <h3 className="text-sm font-bold text-red-600 mb-2">📈 과다한 오행</h3>
+          <div className="space-y-2">
+            {fe.excess.map((item: any, i: number) => (
+              <div key={i} className="bg-red-50 rounded-xl p-3 border border-red-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-bold text-sm text-red-700">{item.elementKo}</span>
+                  <span className="text-xs text-red-500">({item.count}개)</span>
+                </div>
+                <TextWithLineBreaks text={item.short} className="text-sm text-slate-700" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {fe.lack.length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold text-blue-600 mb-2">📉 부족한 오행</h3>
+          <div className="space-y-2">
+            {fe.lack.map((item: any, i: number) => (
+              <div key={i} className="bg-blue-50 rounded-xl p-3 border border-blue-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-bold text-sm text-blue-700">{item.elementKo}</span>
+                  <span className="text-xs text-blue-500">({item.count}개)</span>
+                </div>
+                <TextWithLineBreaks text={item.short} className="text-sm text-slate-700" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── 십성 해석 ──────────────────────────────────────────
+function TenStarInterpretation({ interp }: { interp: any }) {
+  if (!interp?.tenStars) return null
+  const ts = interp.tenStars
+  if (!ts.dominant && ts.excess.length === 0 && ts.lack.length === 0) return null
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">⭐ 십성 분석</h2>
+      {ts.dominant && (
+        <div className="bg-purple-50 rounded-xl p-4 border border-purple-200 mb-3">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-purple-700 font-bold text-sm">👑 주요 십성: {ts.dominant.star}</span>
+            <span className="text-xs text-purple-500">({ts.dominant.count}개)</span>
+          </div>
+          <TextWithLineBreaks text={ts.dominant.short} className="text-sm text-slate-700 mb-2" />
+          <TextWithLineBreaks text={ts.dominant.detail} className="text-xs text-slate-500" />
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {ts.dominant.keywords.map((kw: string, i: number) => (
+              <span key={i} className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-[10px] font-medium">#{kw}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {ts.excess.length > 0 && (
+        <div className="mb-3">
+          <h3 className="text-xs font-bold text-red-600 mb-1.5">과다 십성</h3>
+          <div className="space-y-1.5">
+            {ts.excess.map((item: any, i: number) => (
+              <div key={i} className="bg-red-50 rounded-lg p-2.5 border border-red-200 text-xs">
+                <span className="font-bold text-red-700">{item.star} ({item.count}개)</span>
+                <span className="text-slate-600 ml-2">{item.short}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {ts.lack.length > 0 && (
+        <div>
+          <h3 className="text-xs font-bold text-blue-600 mb-1.5">부족 십성</h3>
+          <div className="space-y-1.5">
+            {ts.lack.map((item: any, i: number) => (
+              <div key={i} className="bg-blue-50 rounded-lg p-2.5 border border-blue-200 text-xs">
+                <span className="font-bold text-blue-700">{item.star} ({item.count}개)</span>
+                <span className="text-slate-600 ml-2">{item.short}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── 신강/신약 해석 ─────────────────────────────────────
+function StrengthInterpretation({ interp }: { interp: any }) {
+  if (!interp?.strength) return null
+  const st = interp.strength
+  return (
+    <div className="space-y-3">
+      <div className="bg-slate-50 rounded-xl p-4">
+        <TextWithLineBreaks text={`${st.symbol} ${st.short}`} className="text-sm text-slate-700 font-medium mb-1" />
+        <TextWithLineBreaks text={st.detail} className="text-xs text-slate-500 leading-relaxed" />
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+          <div className="font-bold text-blue-700 mb-1">💼 직업/적성</div>
+          <TextWithLineBreaks text={st.career} className="text-slate-600" />
+        </div>
+        <div className="bg-pink-50 rounded-lg p-3 border border-pink-200">
+          <div className="font-bold text-pink-700 mb-1">💕 대인관계</div>
+          <TextWithLineBreaks text={st.relationship} className="text-slate-600" />
+        </div>
+        <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+          <div className="font-bold text-amber-700 mb-1">💰 재물운</div>
+          <TextWithLineBreaks text={st.wealth} className="text-slate-600" />
+        </div>
+        <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+          <div className="font-bold text-green-700 mb-1">🏥 건강</div>
+          <TextWithLineBreaks text={st.health} className="text-slate-600" />
+        </div>
+      </div>
+      <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-200">
+        <div className="font-bold text-indigo-700 text-xs mb-1">💡 조언</div>
+        <TextWithLineBreaks text={st.advice} className="text-xs text-slate-600" />
+      </div>
+    </div>
+  )
+}
+
+// ─── 공망 섹션 ──────────────────────────────────────────
+function GongmangSection({ gongmang }: { gongmang: any }) {
+  if (!gongmang) return null
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">🕳️ 공망 (空亡)</h2>
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="bg-slate-50 rounded-xl p-3 text-center">
+          <div className="text-xs text-slate-500 mb-1">년주 기준 공망</div>
+          <div className="text-lg font-bold text-slate-800">{gongmang.yearGongmang.chars[0]} {gongmang.yearGongmang.chars[1]}</div>
+          <div className="text-[10px] text-slate-400">({gongmang.yearGongmang.names[0]} · {gongmang.yearGongmang.names[1]})</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">{gongmang.yearGongmang.sunName} ({gongmang.yearGongmang.sunNameKo})</div>
+        </div>
+        <div className="bg-slate-50 rounded-xl p-3 text-center">
+          <div className="text-xs text-slate-500 mb-1">일주 기준 공망</div>
+          <div className="text-lg font-bold text-slate-800">{gongmang.dayGongmang.chars[0]} {gongmang.dayGongmang.chars[1]}</div>
+          <div className="text-[10px] text-slate-400">({gongmang.dayGongmang.names[0]} · {gongmang.dayGongmang.names[1]})</div>
+          <div className="text-[10px] text-slate-400 mt-0.5">{gongmang.dayGongmang.sunName} ({gongmang.dayGongmang.sunNameKo})</div>
+        </div>
+      </div>
+      <div className="bg-slate-50 rounded-xl p-3 mb-3">
+        <div className="text-xs font-medium text-slate-600 mb-2">원국 지지 공망 여부</div>
+        <div className="grid grid-cols-4 gap-2 text-xs">
+          {(['year', 'month', 'day', 'hour'] as const).map(pos => {
+            const status = gongmang.branchStatus[pos]
+            const posLabel = pos === 'year' ? '년지' : pos === 'month' ? '월지' : pos === 'day' ? '일지' : '시지'
+            if (!status) return (
+              <div key={pos} className="bg-white rounded-lg p-2 text-center">
+                <div className="text-slate-400">{posLabel}</div>
+                <div className="text-slate-300">-</div>
+              </div>
+            )
+            const isGM = status.isYearGongmang || status.isDayGongmang
+            return (
+              <div key={pos} className={`rounded-lg p-2 text-center ${isGM ? 'bg-red-50 border border-red-200' : 'bg-white'}`}>
+                <div className="text-slate-500">{posLabel}</div>
+                <div className="font-bold text-base">{BRANCH_CHARS[status.branchIndex]}</div>
+                {isGM ? (
+                  <div className="text-red-600 font-bold text-[10px]">공망{status.release && <span className="text-green-600 ml-1">→ 해공</span>}</div>
+                ) : (
+                  <div className="text-green-600 text-[10px]">정상</div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      {gongmang.summary && gongmang.summary.length > 0 && (
+        <div className="space-y-1">
+          {gongmang.summary.map((text: string, i: number) => (<p key={i} className="text-xs text-slate-600">• {text}</p>))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── 천을귀인 섹션 ──────────────────────────────────────
+function GwiinSection({ gwiin }: { gwiin: any }) {
+  if (!gwiin) return null
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">🌟 천을귀인 (天乙貴人)</h2>
+      <div className="bg-amber-50 rounded-xl p-4 mb-3 text-center">
+        <div className="text-xs text-slate-500 mb-1">일간 {gwiin.dayStem.char}({gwiin.dayStem.name})의 천을귀인</div>
+        <div className="text-2xl font-bold text-amber-700">{gwiin.gwiinPair.chars[0]} · {gwiin.gwiinPair.chars[1]}</div>
+        <div className="text-xs text-slate-400 mt-1">({gwiin.gwiinPair.names[0]} · {gwiin.gwiinPair.names[1]})</div>
+        <div className="text-[10px] text-slate-400 mt-0.5">{gwiin.gwiinPair.elements[0]} · {gwiin.gwiinPair.elements[1]}</div>
+      </div>
+      <div className="bg-slate-50 rounded-xl p-3 mb-3">
+        <div className="text-xs font-medium text-slate-600 mb-2">원국 지지 귀인 여부</div>
+        <div className="grid grid-cols-4 gap-2 text-xs">
+          {(['year', 'month', 'day', 'hour'] as const).map(pos => {
+            const status = gwiin.branchStatus[pos]
+            const posLabel = pos === 'year' ? '년지' : pos === 'month' ? '월지' : pos === 'day' ? '일지' : '시지'
+            if (!status) return (
+              <div key={pos} className="bg-white rounded-lg p-2 text-center">
+                <div className="text-slate-400">{posLabel}</div>
+                <div className="text-slate-300">-</div>
+              </div>
+            )
+            return (
+              <div key={pos} className={`rounded-lg p-2 text-center ${status.isGwiin ? 'bg-amber-50 border border-amber-300' : 'bg-white'}`}>
+                <div className="text-slate-500">{posLabel}</div>
+                <div className="font-bold text-base">{BRANCH_CHARS[status.branchIndex]}</div>
+                {status.isGwiin ? (
+                  <div className="text-amber-600 font-bold text-[10px]">⭐ 귀인</div>
+                ) : (
+                  <div className="text-slate-400 text-[10px]">-</div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 mb-3">
+        <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+          gwiin.gwiinCount >= 2 ? 'bg-amber-200 text-amber-800' : gwiin.gwiinCount === 1 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
+        }`}>귀인 {gwiin.gwiinCount}개</span>
+        {gwiin.gwiinPositions.length > 0 && (<span className="text-xs text-slate-500">위치: {gwiin.gwiinPositions.join(', ')}</span>)}
+      </div>
+      {gwiin.summary && gwiin.summary.length > 0 && (
+        <div className="space-y-1">
+          {gwiin.summary.map((text: string, i: number) => (<p key={i} className="text-xs text-slate-600">• {text}</p>))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── 오늘의 운세 섹션 ───────────────────────────────────
+function DailyFortuneSection({ interp, fortune }: { interp: any; fortune: any }) {
+  if (!interp?.dailyFortune) return null
+  const df = interp.dailyFortune
+  const today = new Date()
+  const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`
+  const dailyGanjiChar = fortune?.daily?.fortune?.ganjiChar || ''
+  const dailyGanjiName = fortune?.daily?.fortune?.ganjiName || ''
+  const filledStars = Math.max(1, Math.min(5, df.rating))
+  const starDisplay = '★'.repeat(filledStars) + '☆'.repeat(5 - filledStars)
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-1">🔮 오늘의 운세</h2>
+      <p className="text-xs text-slate-400 mb-3">{dateStr}{dailyGanjiChar && ` · ${dailyGanjiChar}(${dailyGanjiName})일`}</p>
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{df.ratingEmoji}</span>
+            <span className="font-bold text-lg text-slate-800">{df.theme}</span>
+          </div>
+          <span className="text-lg text-amber-500 tracking-tighter leading-none">{starDisplay}</span>
+        </div>
+        <p className="text-sm text-slate-700 font-medium">{df.short}</p>
+      </div>
+      <div className="bg-slate-50 rounded-xl p-3 mb-3">
+        <TextWithLineBreaks text={df.detail} className="text-xs sm:text-sm text-slate-600 leading-relaxed" />
+      </div>
+      <div className="bg-indigo-50 rounded-xl p-3 mb-3 border border-indigo-200">
+        <div className="text-xs font-bold text-indigo-700 mb-1">💡 오늘의 조언</div>
+        <p className="text-xs text-slate-600">{df.advice}</p>
+      </div>
+      <div className="grid grid-cols-4 gap-1.5 mb-3">
+        <div className="bg-slate-50 rounded-lg p-2 text-center">
+          <div className="text-[10px] text-slate-400">🎨 색</div>
+          <div className="text-xs font-bold text-slate-700">{df.lucky.color}</div>
+        </div>
+        <div className="bg-slate-50 rounded-lg p-2 text-center">
+          <div className="text-[10px] text-slate-400">🧭 방향</div>
+          <div className="text-xs font-bold text-slate-700">{df.lucky.direction}</div>
+        </div>
+        <div className="bg-slate-50 rounded-lg p-2 text-center">
+          <div className="text-[10px] text-slate-400">🔢 숫자</div>
+          <div className="text-xs font-bold text-slate-700">{df.lucky.number}</div>
+        </div>
+        <div className="bg-slate-50 rounded-lg p-2 text-center">
+          <div className="text-[10px] text-slate-400">⏰ 시간</div>
+          <div className="text-xs font-bold text-slate-700">{df.lucky.time}</div>
+        </div>
+      </div>
+      <div className="bg-red-50 rounded-xl p-3 border border-red-200">
+        <div className="text-xs font-bold text-red-600 mb-1">⚠️ 주의사항</div>
+        <p className="text-xs text-slate-600">{df.caution}</p>
+      </div>
+    </div>
+  )
+}
+
+// ─── 충합 표시 헬퍼 ─────────────────────────────────────
+function renderInteractions(interactions: any) {
+  const items: string[] = []
+  if (interactions.stemCombinations?.length) interactions.stemCombinations.forEach((c: any) => items.push(`천간합: ${c.stem1}${c.stem2} → ${c.resultElement || ''}`))
+  if (interactions.branchClashes?.length) interactions.branchClashes.forEach((c: any) => items.push(`충: ${c.branch1}${c.branch2}`))
+  if (interactions.branchCombines?.length) interactions.branchCombines.forEach((c: any) => items.push(`합: ${c.branch1}${c.branch2} → ${c.resultElement || ''}`))
+  if (interactions.branchPunishments?.length) interactions.branchPunishments.forEach((c: any) => items.push(`형: ${c.branch1}${c.branch2}`))
+  if (interactions.branchHarms?.length) interactions.branchHarms.forEach((c: any) => items.push(`해: ${c.branch1}${c.branch2}`))
+  if (items.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      {items.map((item, i) => (<span key={i} className="px-2 py-1 bg-white rounded-full text-[10px] text-slate-600 border">{item}</span>))}
     </div>
   )
 }
@@ -331,377 +617,116 @@ function DaewoonSection({ daewoon, birthYear, input }: { daewoon: any; birthYear
   const [fortunes, setFortunes] = useState<any[]>([])
   const [loadingFortune, setLoadingFortune] = useState(false)
   const [selectedFortuneYear, setSelectedFortuneYear] = useState<number | null>(null)
-
   const currentIndex = getCurrentDaewoonIndex(daewoon.entries)
   const currentAge = getCurrentAge(birthYear)
   const currentYear = new Date().getFullYear()
 
-  // 대운 선택 시 세운 로드
   async function handleDaewoonClick(index: number) {
     setSelectedIndex(index)
     setSelectedFortuneYear(null)
-
     const entry = daewoon.entries[index]
     if (!entry) return
-
     setLoadingFortune(true)
     try {
       const res = await fetch('/api/saju/fortune', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...input,
-          startYear: entry.startYear,
-          endYear: entry.endYear,
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...input, startYear: entry.startYear, endYear: entry.endYear }),
       })
       const data = await res.json()
       setFortunes(data.fortunes || [])
-
-      // 현재 대운이면 올해를 자동 선택
-      if (index === currentIndex) {
-        setSelectedFortuneYear(currentYear)
-      }
-    } catch (err) {
-      console.error('세운 로드 실패:', err)
-      setFortunes([])
-    } finally {
-      setLoadingFortune(false)
-    }
+      if (index === currentIndex) setSelectedFortuneYear(currentYear)
+    } catch (err) { console.error('세운 로드 실패:', err); setFortunes([]) }
+    finally { setLoadingFortune(false) }
   }
 
-  // 최초 로드: 현재 대운의 세운 자동 로드
-  useState(() => {
-    if (currentIndex >= 0) {
-      handleDaewoonClick(currentIndex)
-    }
-  })
+  useState(() => { if (currentIndex >= 0) handleDaewoonClick(currentIndex) })
 
   const selectedEntry = selectedIndex >= 0 ? daewoon.entries[selectedIndex] : null
   const selectedFortune = fortunes.find(f => f.year === selectedFortuneYear)
 
   return (
     <div>
-      {/* 정보 */}
       <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 mb-3">
         <span>{daewoon.direction === 'forward' ? '순행 ▶' : '◀ 역행'}</span>
-        <span>·</span>
-        <span>대운시작: {daewoon.startAge.description}</span>
-        <span>·</span>
-        <span className="text-indigo-600 font-medium">현재 만 {currentAge}세</span>
+        <span>·</span><span>대운시작: {daewoon.startAge.description}</span>
+        <span>·</span><span className="text-indigo-600 font-medium">현재 만 {currentAge}세</span>
       </div>
-
-      {/* 대운 가로 스크롤 */}
       <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6 pb-3">
         <div className="flex gap-1.5" style={{ minWidth: 'max-content' }}>
           {daewoon.entries.map((entry: any, i: number) => {
-            const isCurrent = i === currentIndex
-            const isSelected = i === selectedIndex
-            // 🔧 FIX 1: 한자로 오행 확실히 결정
+            const isCurrent = i === currentIndex; const isSelected = i === selectedIndex
             const chars = getGanjiChars(entry)
             const stemEl = CHAR_ELEMENT[chars[0]] || getStemElement(entry)
             const branchEl = CHAR_ELEMENT[chars[1]] || getBranchElement(entry)
-
             return (
-              <button
-                key={i}
-                onClick={() => handleDaewoonClick(i)}
-                className={`flex-shrink-0 text-center px-1.5 py-2 rounded-lg transition cursor-pointer
-                  ${isSelected
-                    ? 'bg-indigo-100 ring-2 ring-indigo-500'
-                    : isCurrent
-                      ? 'bg-indigo-50 ring-1 ring-indigo-300'
-                      : 'hover:bg-slate-100'
-                  }`}
-                style={{ minWidth: '52px' }}
-              >
-                {isCurrent && (
-                  <div className="text-[9px] text-indigo-600 font-bold mb-0.5">현재</div>
-                )}
+              <button key={i} onClick={() => handleDaewoonClick(i)}
+                className={`flex-shrink-0 text-center px-1.5 py-2 rounded-lg transition cursor-pointer ${isSelected ? 'bg-indigo-100 ring-2 ring-indigo-500' : isCurrent ? 'bg-indigo-50 ring-1 ring-indigo-300' : 'hover:bg-slate-100'}`}
+                style={{ minWidth: '52px' }}>
+                {isCurrent && <div className="text-[9px] text-indigo-600 font-bold mb-0.5">현재</div>}
                 {!isCurrent && <div className="h-3"></div>}
-
-                <div className={`text-[10px] mb-1 ${isSelected ? 'text-indigo-700 font-bold' : 'text-slate-400'}`}>
-                  {entry.startAge}~{entry.endAge}세
-                </div>
-
-                {/* 천간 */}
-                <div className="flex justify-center mb-0.5">
-                  <SmallHanjaCell char={chars[0]} element={stemEl} />
-                </div>
-                {/* 지지 */}
-                <div className="flex justify-center">
-                  <SmallHanjaCell char={chars[1]} element={branchEl} />
-                </div>
-
-                <div className={`text-[10px] mt-1 ${isSelected ? 'text-indigo-700 font-medium' : 'text-slate-500'}`}>
-                  {entry.ganjiName}
-                </div>
-                <div className="text-[9px] text-slate-400">
-                  {entry.startYear}
-                </div>
+                <div className={`text-[10px] mb-1 ${isSelected ? 'text-indigo-700 font-bold' : 'text-slate-400'}`}>{entry.startAge}~{entry.endAge}세</div>
+                <div className="flex justify-center mb-0.5"><SmallHanjaCell char={chars[0]} element={stemEl} /></div>
+                <div className="flex justify-center"><SmallHanjaCell char={chars[1]} element={branchEl} /></div>
+                <div className={`text-[10px] mt-1 ${isSelected ? 'text-indigo-700 font-medium' : 'text-slate-500'}`}>{entry.ganjiName}</div>
+                <div className="text-[9px] text-slate-400">{entry.startYear}</div>
               </button>
             )
           })}
         </div>
       </div>
-
-      {/* 선택된 대운 상세 */}
       {selectedEntry && (
         <div className="mt-3 bg-indigo-50 rounded-xl p-3 sm:p-4">
-          <div className="text-sm font-medium text-indigo-700 mb-1">
-            선택 대운: {selectedEntry.ganji} ({selectedEntry.ganjiName})
-            · {selectedEntry.startAge}세~{selectedEntry.endAge}세
-            ({selectedEntry.startYear}~{selectedEntry.endYear}년)
-          </div>
+          <div className="text-sm font-medium text-indigo-700">선택 대운: {selectedEntry.ganji} ({selectedEntry.ganjiName}) · {selectedEntry.startAge}세~{selectedEntry.endAge}세 ({selectedEntry.startYear}~{selectedEntry.endYear}년)</div>
         </div>
       )}
-
-      {/* 세운 */}
       {selectedEntry && (
         <div className="mt-4">
-          <h3 className="text-sm font-bold text-slate-700 mb-2">
-            📅 세운 ({selectedEntry.startYear}~{selectedEntry.endYear}년)
-          </h3>
-
-          {loadingFortune ? (
-            <div className="text-center py-4 text-slate-400 text-sm">세운 계산 중...</div>
-          ) : fortunes.length > 0 ? (
+          <h3 className="text-sm font-bold text-slate-700 mb-2">📅 세운 ({selectedEntry.startYear}~{selectedEntry.endYear}년)</h3>
+          {loadingFortune ? (<div className="text-center py-4 text-slate-400 text-sm">세운 계산 중...</div>)
+          : fortunes.length > 0 ? (
             <div>
-              {/* 세운 목록 */}
               <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6 pb-3">
                 <div className="flex gap-1.5" style={{ minWidth: 'max-content' }}>
                   {fortunes.map((f: any) => {
-                    const isCurrentYear = f.year === currentYear
-                    const isSelectedYear = f.year === selectedFortuneYear
-                    const ganjiChar = f.fortune?.fortune?.ganjiChar || ''
-                    const ganjiName = f.fortune?.fortune?.ganjiName || ''
-                    const stemChar = ganjiChar[0] || ''
-                    const branchChar = ganjiChar[1] || ''
-                    // 🔧 FIX 1: 한자로 오행 확실히 결정
+                    const isCurrentYear = f.year === currentYear; const isSelectedYear = f.year === selectedFortuneYear
+                    const ganjiChar = f.fortune?.fortune?.ganjiChar || ''; const ganjiName = f.fortune?.fortune?.ganjiName || ''
+                    const stemChar = ganjiChar[0] || ''; const branchChar = ganjiChar[1] || ''
                     const stemEl = CHAR_ELEMENT[stemChar] || f.fortune?.fortune?.stemElement || 'earth'
                     const branchEl = CHAR_ELEMENT[branchChar] || f.fortune?.fortune?.branchElement || 'earth'
-
                     return (
-                      <button
-                        key={f.year}
-                        onClick={() => setSelectedFortuneYear(f.year)}
-                        className={`flex-shrink-0 text-center px-1.5 py-2 rounded-lg transition cursor-pointer
-                          ${isSelectedYear
-                            ? 'bg-amber-100 ring-2 ring-amber-500'
-                            : isCurrentYear
-                              ? 'bg-amber-50 ring-1 ring-amber-300'
-                              : 'hover:bg-slate-100'
-                          }`}
-                        style={{ minWidth: '48px' }}
-                      >
-                        {isCurrentYear && (
-                          <div className="text-[9px] text-amber-600 font-bold mb-0.5">올해</div>
-                        )}
+                      <button key={f.year} onClick={() => setSelectedFortuneYear(f.year)}
+                        className={`flex-shrink-0 text-center px-1.5 py-2 rounded-lg transition cursor-pointer ${isSelectedYear ? 'bg-amber-100 ring-2 ring-amber-500' : isCurrentYear ? 'bg-amber-50 ring-1 ring-amber-300' : 'hover:bg-slate-100'}`}
+                        style={{ minWidth: '48px' }}>
+                        {isCurrentYear && <div className="text-[9px] text-amber-600 font-bold mb-0.5">올해</div>}
                         {!isCurrentYear && <div className="h-3"></div>}
-
-                        <div className={`text-[10px] mb-1 ${isSelectedYear ? 'text-amber-700 font-bold' : 'text-slate-400'}`}>
-                          {f.year}년
-                        </div>
-
-                        <div className="flex justify-center mb-0.5">
-                          <SmallHanjaCell char={stemChar} element={stemEl} size="small" />
-                        </div>
-                        <div className="flex justify-center">
-                          <SmallHanjaCell char={branchChar} element={branchEl} size="small" />
-                        </div>
-
-                        <div className={`text-[9px] mt-1 ${isSelectedYear ? 'text-amber-700' : 'text-slate-500'}`}>
-                          {ganjiName}
-                        </div>
+                        <div className={`text-[10px] mb-1 ${isSelectedYear ? 'text-amber-700 font-bold' : 'text-slate-400'}`}>{f.year}년</div>
+                        <div className="flex justify-center mb-0.5"><SmallHanjaCell char={stemChar} element={stemEl} size="small" /></div>
+                        <div className="flex justify-center"><SmallHanjaCell char={branchChar} element={branchEl} size="small" /></div>
+                        <div className={`text-[9px] mt-1 ${isSelectedYear ? 'text-amber-700' : 'text-slate-500'}`}>{ganjiName}</div>
                       </button>
                     )
                   })}
                 </div>
               </div>
-
-              {/* 선택된 세운 상세 */}
               {selectedFortune && (
                 <div className="mt-3 bg-amber-50 rounded-xl p-3 sm:p-4">
-                  <div className="text-sm font-medium text-amber-700 mb-2">
-                    {selectedFortune.year}년 세운: {selectedFortune.fortune?.fortune?.ganjiChar} ({selectedFortune.fortune?.fortune?.ganjiName})
-                  </div>
+                  <div className="text-sm font-medium text-amber-700 mb-2">{selectedFortune.year}년 세운: {selectedFortune.fortune?.fortune?.ganjiChar} ({selectedFortune.fortune?.fortune?.ganjiName})</div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-white rounded-lg p-2">
-                      <span className="text-slate-500">천간 십성: </span>
-                      <span className="font-medium">{selectedFortune.fortune?.fortune?.tenStar?.stemStar || '-'}</span>
-                    </div>
-                    <div className="bg-white rounded-lg p-2">
-                      <span className="text-slate-500">지지 십성: </span>
-                      <span className="font-medium">{selectedFortune.fortune?.fortune?.tenStar?.branchMainStar || '-'}</span>
-                    </div>
+                    <div className="bg-white rounded-lg p-2"><span className="text-slate-500">천간 십성: </span><span className="font-medium">{selectedFortune.fortune?.fortune?.tenStar?.stemStar || '-'}</span></div>
+                    <div className="bg-white rounded-lg p-2"><span className="text-slate-500">지지 십성: </span><span className="font-medium">{selectedFortune.fortune?.fortune?.tenStar?.branchMainStar || '-'}</span></div>
                   </div>
-                  {/* 충합 */}
-                  {selectedFortune.fortune?.fortune?.interactions && (
-                    <div className="mt-2">
-                      {renderInteractions(selectedFortune.fortune.fortune.interactions)}
-                    </div>
-                  )}
+                  {selectedFortune.fortune?.fortune?.interactions && (<div className="mt-2">{renderInteractions(selectedFortune.fortune.fortune.interactions)}</div>)}
                 </div>
               )}
             </div>
-          ) : (
-            <div className="text-center py-4 text-slate-400 text-sm">세운 데이터 없음</div>
-          )}
+          ) : (<div className="text-center py-4 text-slate-400 text-sm">세운 데이터 없음</div>)}
         </div>
       )}
     </div>
   )
 }
 
-// ─── 충합 표시 헬퍼 ──────────────────────────────────────
-function renderInteractions(interactions: any) {
-  const items: string[] = []
-  if (interactions.stemCombinations?.length) {
-    interactions.stemCombinations.forEach((c: any) => items.push(`천간합: ${c.stem1}${c.stem2} → ${c.resultElement || ''}`))
-  }
-  if (interactions.branchClashes?.length) {
-    interactions.branchClashes.forEach((c: any) => items.push(`충: ${c.branch1}${c.branch2}`))
-  }
-  if (interactions.branchCombines?.length) {
-    interactions.branchCombines.forEach((c: any) => items.push(`합: ${c.branch1}${c.branch2} → ${c.resultElement || ''}`))
-  }
-  if (interactions.branchPunishments?.length) {
-    interactions.branchPunishments.forEach((c: any) => items.push(`형: ${c.branch1}${c.branch2}`))
-  }
-  if (interactions.branchHarms?.length) {
-    interactions.branchHarms.forEach((c: any) => items.push(`해: ${c.branch1}${c.branch2}`))
-  }
-
-  if (items.length === 0) return null
-
-  return (
-    <div className="flex flex-wrap gap-1.5 mt-2">
-      {items.map((item, i) => (
-        <span key={i} className="px-2 py-1 bg-white rounded-full text-[10px] text-slate-600 border">
-          {item}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-// ─── 대운 간지에서 오행 추출 헬퍼 ────────────────────────
-function getStemElement(entry: any): string {
-  return entry.tenStar?.stemElement || entry.stemElement || 'earth'
-}
-
-function getBranchElement(entry: any): string {
-  return entry.tenStar?.branchElement || entry.branchElement || 'earth'
-}
-
-function getGanjiChars(entry: any): [string, string] {
-  const ganji = entry.ganji || entry.ganjiChar || ''
-  return [ganji[0] || '?', ganji[1] || '?']
-}
-
-// ─── 메인 결과 컴포넌트 ──────────────────────────────────
-export default function SajuResult({ result }: { result: any }) {
-  if (!result) return null
-
-  const { pillars, dayStem, tenStars, strength, yongsin, daewoon, monthSolarTerm, meta, input } = result
-  const birthYear = input?.year || 1990
-
-  return (
-    <div className="space-y-4 sm:space-y-6">
-
-      {/* ① 사주 원국 4기둥 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-        <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-1">📋 사주 원국</h2>
-        <p className="text-xs text-slate-400 mb-4">
-          일간: {dayStem.char}({dayStem.name}) · {dayStem.elementKo}/{dayStem.yinYangKo === '양' ? '양(陽)' : '음(陰)'} · 월령: {monthSolarTerm.name}
-        </p>
-        <FourPillarsTable pillars={pillars} tenStars={tenStars} dayStem={dayStem} />
-      </div>
-
-      {/* ② 오행 분포 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-        <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-4">🔥 오행 분포</h2>
-        <FiveElementBar counts={getFiveElementCounts(result)} />
-      </div>
-
-      {/* ③ 십성 분포 */}
-      {tenStars && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-4">⭐ 십성 분포</h2>
-          <TenStarSection tenStars={tenStars} />
-        </div>
-      )}
-
-      {/* ④ 신강/신약 + 용신 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-        <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-4">⚖️ 신강/신약 판단</h2>
-
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-          <div className={`px-5 py-2 rounded-full text-lg font-bold text-center
-            ${strength.result === '신강' ? 'bg-red-100 text-red-700' :
-              strength.result === '신약' ? 'bg-blue-100 text-blue-700' :
-              'bg-green-100 text-green-700'}`}
-          >
-            {strength.result}
-          </div>
-          <div className="text-sm text-slate-500 text-center sm:text-left">
-            <span>돕는 힘 <strong>{strength.helpScore.toFixed(1)}</strong></span>
-            <span className="mx-2">vs</span>
-            <span>억제 힘 <strong>{strength.restrainScore.toFixed(1)}</strong></span>
-            <span className="ml-2 font-medium text-slate-700">
-              (차이: {strength.score > 0 ? '+' : ''}{strength.score.toFixed(1)})
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-indigo-50 rounded-xl p-4">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="text-indigo-600 font-bold">용신(用神)</span>
-            <span className="px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-800 text-sm font-medium">
-              {yongsin.yongsinKo} ({yongsin.yongsin})
-            </span>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 text-sm">
-            <div>
-              <span className="text-green-600 font-medium">✅ 좋은 오행: </span>
-              <span className="text-slate-700">{yongsin.guide.favorableElements.join(', ')}</span>
-            </div>
-            <div>
-              <span className="text-red-600 font-medium">❌ 나쁜 오행: </span>
-              <span className="text-slate-700">{yongsin.guide.unfavorableElements.join(', ')}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ⑤ 대운 + 세운 */}
-      {daewoon && (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 overflow-hidden">
-          <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-4">🌊 대운 · 세운</h2>
-          <DaewoonSection daewoon={daewoon} birthYear={birthYear} input={input} />
-        </div>
-      )}
-
-      {/* ⑥ 경고/참고사항 */}
-      {meta.warnings && meta.warnings.length > 0 && (
-        <div className="bg-amber-50 rounded-xl border border-amber-200 p-4">
-          <h3 className="text-sm font-medium text-amber-700 mb-2">⚠️ 참고사항</h3>
-          <ul className="text-xs text-amber-600 space-y-1">
-            {meta.warnings.map((w: string, i: number) => (
-              <li key={i}>• {w}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="text-center text-xs text-slate-300 py-2">
-        engine v{meta.engineVersion} · {new Date(meta.calculatedAt).toLocaleString('ko-KR')}
-      </div>
-    </div>
-  )
-}
-
-// ─── 오행 카운트 추출 ────────────────────────────────────
+// ─── 오행 카운트 추출 ───────────────────────────────────
 function getFiveElementCounts(result: any): Record<string, number> {
   const counts: Record<string, number> = { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 }
   const pillars = [result.pillars.year, result.pillars.month, result.pillars.day, result.pillars.hour]
@@ -711,4 +736,101 @@ function getFiveElementCounts(result: any): Record<string, number> {
     if (p.branch?.element && counts[p.branch.element] !== undefined) counts[p.branch.element]++
   }
   return counts
+}
+
+// ─── 메인 결과 컴포넌트 ─────────────────────────────────
+export default function SajuResult({ result }: { result: any }) {
+  if (!result) return null
+  const { pillars, dayStem, tenStars, strength, yongsin, daewoon, fortune, gongmang, gwiin, interpretation, monthSolarTerm, meta, input } = result
+  const birthYear = input?.year || 1990
+
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      {/* ① 사주 원국 */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+        <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-1">📋 사주 원국</h2>
+        <p className="text-xs text-slate-400 mb-4">일간: {dayStem.char}({dayStem.name}) · {dayStem.elementKo}/{dayStem.yinYangKo === '양' ? '양(陽)' : '음(陰)'} · 월령: {monthSolarTerm.name}</p>
+        <FourPillarsTable pillars={pillars} tenStars={tenStars} />
+      </div>
+
+      {/* ② 일간 성격 해석 */}
+      <DayStemInterpretation interp={interpretation} />
+
+      {/* ③ 오행 분포 */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+        <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-4">🔥 오행 분포</h2>
+        <FiveElementBar counts={getFiveElementCounts(result)} />
+      </div>
+
+      {/* ④ 오행 분석 */}
+      <FiveElementInterpretation interp={interpretation} />
+
+      {/* ⑤ 십성 분포 */}
+      {tenStars && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-4">⭐ 십성 분포</h2>
+          <TenStarSection tenStars={tenStars} />
+        </div>
+      )}
+
+      {/* ⑥ 십성 분석 */}
+      <TenStarInterpretation interp={interpretation} />
+
+      {/* ⑦ 신강/신약 + 용신 */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+        <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-4">⚖️ 신강/신약 판단</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+          <div className={`px-5 py-2 rounded-full text-lg font-bold text-center ${strength.result === '신강' ? 'bg-red-100 text-red-700' : strength.result === '신약' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+            {strength.result}
+          </div>
+          <div className="text-sm text-slate-500 text-center sm:text-left">
+            <span>돕는 힘 <strong>{strength.helpScore.toFixed(1)}</strong></span>
+            <span className="mx-2">vs</span>
+            <span>억제 힘 <strong>{strength.restrainScore.toFixed(1)}</strong></span>
+            <span className="ml-2 font-medium text-slate-700">(차이: {strength.score > 0 ? '+' : ''}{strength.score.toFixed(1)})</span>
+          </div>
+        </div>
+        <StrengthInterpretation interp={interpretation} />
+        <div className="bg-indigo-50 rounded-xl p-4 mt-4">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="text-indigo-600 font-bold">용신(用神)</span>
+            <span className="px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-800 text-sm font-medium">{yongsin.yongsinKo} ({yongsin.yongsin})</span>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 text-sm">
+            <div><span className="text-green-600 font-medium">✅ 좋은 오행: </span><span className="text-slate-700">{yongsin.guide.favorableElements.join(', ')}</span></div>
+            <div><span className="text-red-600 font-medium">❌ 나쁜 오행: </span><span className="text-slate-700">{yongsin.guide.unfavorableElements.join(', ')}</span></div>
+          </div>
+        </div>
+      </div>
+
+      {/* ⑧ 공망 */}
+      <GongmangSection gongmang={gongmang} />
+
+      {/* ⑨ 천을귀인 */}
+      <GwiinSection gwiin={gwiin} />
+
+      {/* ⑩ 오늘의 운세 */}
+      <DailyFortuneSection interp={interpretation} fortune={fortune} />
+
+      {/* ⑪ 대운 + 세운 */}
+      {daewoon && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 overflow-hidden">
+          <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-4">🌊 대운 · 세운</h2>
+          <DaewoonSection daewoon={daewoon} birthYear={birthYear} input={input} />
+        </div>
+      )}
+
+      {/* ⑫ 경고 */}
+      {meta.warnings && meta.warnings.length > 0 && (
+        <div className="bg-amber-50 rounded-xl border border-amber-200 p-4">
+          <h3 className="text-sm font-medium text-amber-700 mb-2">⚠️ 참고사항</h3>
+          <ul className="text-xs text-amber-600 space-y-1">
+            {meta.warnings.map((w: string, i: number) => (<li key={i}>• {w}</li>))}
+          </ul>
+        </div>
+      )}
+
+      <div className="text-center text-xs text-slate-300 py-2">engine v{meta.engineVersion} · {new Date(meta.calculatedAt).toLocaleString('ko-KR')}</div>
+    </div>
+  )
 }

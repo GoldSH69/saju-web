@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { calculateSaju } from 'saju-engine'
+import { calculateSaju, generateInterpretation } from 'saju-engine'
 import type { CalculateInput } from 'saju-engine'
 
 export async function POST(request: NextRequest) {
@@ -36,6 +36,16 @@ export async function POST(request: NextRequest) {
     }
 
     const result = calculateSaju(input)
+
+    // ★ 해석 템플릿 생성
+    const interpretation = generateInterpretation(result)
+
+    // ★ 디버그 로그 (확인 후 삭제)
+    console.log('★ starCount:', JSON.stringify(result.tenStars.starCount))
+    console.log('★ gongmang branchStatus:', JSON.stringify(result.gongmang?.branchStatus))
+
+    console.log('★ yearGongmang:', JSON.stringify(result.gongmang?.yearGongmang))
+    console.log('★ dayGongmang:', JSON.stringify(result.gongmang?.dayGongmang))
 
     // 프론트에 필요한 데이터를 직접 구성
     const response = {
@@ -77,6 +87,28 @@ export async function POST(request: NextRequest) {
       yongsin: result.yongsin,
       daewoon: result.daewoon,
       fortune: result.fortune,
+
+      // ★ 공망
+      gongmang: result.gongmang ? {
+        yearGongmang: result.gongmang.yearGongmang,
+        dayGongmang: result.gongmang.dayGongmang,
+        branchStatus: result.gongmang.branchStatus,
+        summary: result.gongmang.summary,
+      } : null,
+
+      // ★ 천을귀인
+      gwiin: result.gwiin ? {
+        dayStem: result.gwiin.dayStem,
+        gwiinPair: result.gwiin.gwiinPair,
+        branchStatus: result.gwiin.branchStatus,
+        gwiinCount: result.gwiin.gwiinCount,
+        gwiinPositions: result.gwiin.gwiinPositions,
+        summary: result.gwiin.summary,
+      } : null,
+
+      // ★ 해석 템플릿
+      interpretation,
+
       monthSolarTerm: {
         name: result.monthSolarTerm.name,
         dateTime: result.monthSolarTerm.dateTime,

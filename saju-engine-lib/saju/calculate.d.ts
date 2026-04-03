@@ -9,6 +9,8 @@ import { HiddenStemEntry } from './hiddenStems';
 import { DaewoonResult } from './daewoon';
 import { YearlyFortuneResult, MonthlyFortuneResult, DailyFortuneResult } from './fortune';
 import { YongsinResult, YongsinMethod } from './yongsin';
+import { GongmangAnalysis } from './gongmang';
+import { GwiinAnalysis } from './gwiin';
 export interface CalculateInput {
     year: number;
     month: number;
@@ -73,6 +75,8 @@ export interface CalculateResult {
     yongsin: YongsinResult;
     daewoon: DaewoonResult | null;
     fortune: FortuneResult | null;
+    gongmang: GongmangAnalysis | null;
+    gwiin: GwiinAnalysis | null;
     monthSolarTerm: {
         name: string;
         dateTime: string;
