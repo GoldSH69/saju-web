@@ -215,15 +215,16 @@ function TenStarSection({ tenStars }: { tenStars: any }) {
   }
   const { starCount, yearStem, monthStem, hourStem } = tenStars
   const positionStars = [
-    { pos: '년간', star: yearStem?.tenStar, target: yearStem?.target },
-    { pos: '월간', star: monthStem?.tenStar, target: monthStem?.target },
     { pos: '시간', star: hourStem?.tenStar, target: hourStem?.target },
+        { pos: '일간', star: '일간(나)', target: tenStars.dayStem, isMe: true },
+    { pos: '월간', star: monthStem?.tenStar, target: monthStem?.target },
+    { pos: '년간', star: yearStem?.tenStar, target: yearStem?.target },
   ]
   const branchPositions = [
-    { pos: '년지', stars: tenStars.yearBranchStars },
-    { pos: '월지', stars: tenStars.monthBranchStars },
-    { pos: '일지', stars: tenStars.dayBranchStars },
     { pos: '시지', stars: tenStars.hourBranchStars },
+    { pos: '일지', stars: tenStars.dayBranchStars },
+    { pos: '월지', stars: tenStars.monthBranchStars },
+    { pos: '년지', stars: tenStars.yearBranchStars },
   ]
 
   return (
@@ -242,11 +243,13 @@ function TenStarSection({ tenStars }: { tenStars: any }) {
       </div>
       <div className="bg-slate-50 rounded-xl p-3">
         <div className="text-xs font-medium text-slate-600 mb-2">천간 십성</div>
-        <div className="grid grid-cols-3 gap-1.5 text-xs">
-          {positionStars.map(item => (
-            <div key={item.pos} className="flex justify-between bg-white rounded-lg px-3 py-2">
-              <span className="text-slate-500">{item.pos}</span>
-              <span className="font-medium text-slate-800">{item.target ? `${item.target} → ${item.star}` : '-'}</span>
+        <div className="grid grid-cols-4 gap-1.5 text-xs">
+          {positionStars.map((item: any) => (
+            <div key={item.pos} className={`flex justify-between rounded-lg px-3 py-2 ${item.isMe ? 'bg-indigo-50 border border-indigo-200' : 'bg-white'}`}>
+              <span className={item.isMe ? 'text-indigo-600 font-bold' : 'text-slate-500'}>{item.pos}</span>
+              <span className={item.isMe ? 'font-bold text-indigo-700' : 'font-medium text-slate-800'}>
+                                {item.isMe ? `${item.target} (나)` : (item.target ? `${item.target} → ${item.star}` : '-')}
+              </span>
             </div>
           ))}
         </div>
