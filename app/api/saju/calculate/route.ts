@@ -40,13 +40,6 @@ export async function POST(request: NextRequest) {
     // ★ 해석 템플릿 생성
     const interpretation = generateInterpretation(result)
 
-    // ★ 디버그 로그 (확인 후 삭제)
-    console.log('★ starCount:', JSON.stringify(result.tenStars.starCount))
-    console.log('★ gongmang branchStatus:', JSON.stringify(result.gongmang?.branchStatus))
-
-    console.log('★ yearGongmang:', JSON.stringify(result.gongmang?.yearGongmang))
-    console.log('★ dayGongmang:', JSON.stringify(result.gongmang?.dayGongmang))
-
     // 프론트에 필요한 데이터를 직접 구성
     const response = {
       input: result.input,

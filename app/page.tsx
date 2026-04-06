@@ -36,16 +36,11 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* 헤더 */}
-      <div className="text-center py-6">
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">
-          🔮 무료 사주팔자 계산
-        </h1>
-        <p className="text-slate-500">
-          만세력 기반 정확한 사주 분석
-        </p>
-      </div>
+    <div className="max-w-4xl mx-auto px-4">
+      {/* 타이틀 */}
+      <h1 className="text-center text-xl font-bold text-slate-700 py-4">
+        만세력 기반 사주 분석 및 오늘의 운세
+      </h1>
 
       {/* 입력 폼 */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">

@@ -53,6 +53,80 @@ function TextWithLineBreaks({ text, className }: { text: string; className?: str
   )
 }
 
+// ─── 광고 잠금 공통 컴포넌트 ────────────────────────────
+function BlurredContent({
+  preview,
+  children,
+  isUnlocked,
+  onUnlock,
+  label,
+}: {
+  preview: React.ReactNode
+  children: React.ReactNode
+  isUnlocked: boolean
+  onUnlock: () => void
+  label: string
+}) {
+  if (isUnlocked) return <>{children}</>
+  return (
+    <div className="relative">
+      {/* 미리보기 (선명하게) */}
+      {preview}
+      {/* blur 영역 */}
+      <div className="relative mt-2">
+        <div className="blur-sm pointer-events-none select-none opacity-60 max-h-32 overflow-hidden">
+          {children}
+        </div>
+        {/* 그라데이션 오버레이 + 버튼 */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/70 to-white flex flex-col items-center justify-end pb-4">
+          <p className="text-xs text-slate-500 mb-2">🔒 {label}</p>
+          <button
+            onClick={onUnlock}
+            className="px-5 py-2.5 bg-indigo-600 text-white rounded-full text-sm font-bold hover:bg-indigo-700 transition shadow-lg"
+          >
+            🔓 광고 보고 전체 내용 확인
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function LockedGuide({
+  items,
+  isUnlocked,
+  onUnlock,
+  children,
+}: {
+  items: string[]
+  isUnlocked: boolean
+  onUnlock: () => void
+  children: React.ReactNode
+}) {
+  if (isUnlocked) return <>{children}</>
+  return (
+    <div className="text-center py-6">
+      <div className="bg-slate-50 rounded-xl p-5 mb-4 text-left inline-block w-full max-w-sm">
+        <p className="text-sm font-bold text-slate-700 mb-3">📋 포함 내용</p>
+        <ul className="space-y-1.5">
+          {items.map((item, i) => (
+            <li key={i} className="text-xs text-slate-600 flex items-start gap-2">
+              <span className="text-green-500 mt-0.5">✓</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <button
+        onClick={onUnlock}
+        className="px-5 py-2.5 bg-indigo-600 text-white rounded-full text-sm font-bold hover:bg-indigo-700 transition shadow-lg"
+      >
+        🔓 광고 보고 분석 결과 확인
+      </button>
+    </div>
+  )
+}
+
 // ─── 한자 셀 컴포넌트 ───────────────────────────────────
 function HanjaCell({ char, element }: { char: string; element: string }) {
   const style = ELEMENT_STYLE[element] || ELEMENT_STYLE.earth
@@ -216,7 +290,7 @@ function TenStarSection({ tenStars }: { tenStars: any }) {
   const { starCount, yearStem, monthStem, hourStem } = tenStars
   const positionStars = [
     { pos: '시간', star: hourStem?.tenStar, target: hourStem?.target },
-        { pos: '일간', star: '일간(나)', target: tenStars.dayStem, isMe: true },
+    { pos: '일간', star: '일간(나)', target: tenStars.dayStem, isMe: true },
     { pos: '월간', star: monthStem?.tenStar, target: monthStem?.target },
     { pos: '년간', star: yearStem?.tenStar, target: yearStem?.target },
   ]
@@ -248,7 +322,7 @@ function TenStarSection({ tenStars }: { tenStars: any }) {
             <div key={item.pos} className={`flex justify-between rounded-lg px-3 py-2 ${item.isMe ? 'bg-indigo-50 border border-indigo-200' : 'bg-white'}`}>
               <span className={item.isMe ? 'text-indigo-600 font-bold' : 'text-slate-500'}>{item.pos}</span>
               <span className={item.isMe ? 'font-bold text-indigo-700' : 'font-medium text-slate-800'}>
-                                {item.isMe ? `${item.target} (나)` : (item.target ? `${item.target} → ${item.star}` : '-')}
+                {item.isMe ? `${item.target} (나)` : (item.target ? `${item.target} → ${item.star}` : '-')}
               </span>
             </div>
           ))}
@@ -298,14 +372,18 @@ function DayStemInterpretation({ interp }: { interp: any }) {
   )
 }
 
-// ─── 오행 해석 ──────────────────────────────────────────
-function FiveElementInterpretation({ interp }: { interp: any }) {
+// ─── 오행 해석 (광고 콘텐츠) ────────────────────────────
+function FiveElementInterpretation({ interp, isUnlocked, onUnlock }: { interp: any; isUnlocked: boolean; onUnlock: () => void }) {
   if (!interp?.fiveElements) return null
   const fe = interp.fiveElements
   if (fe.excess.length === 0 && fe.lack.length === 0) return null
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">🌿 오행 분석</h2>
+
+  const previewText = fe.excess.length > 0
+    ? `${fe.excess[0].elementKo}이(가) ${fe.excess[0].count}개로 강합니다`
+    : `${fe.lack[0].elementKo}이(가) 부족합니다`
+
+  const fullContent = (
+    <>
       {fe.excess.length > 0 && (
         <div className="mb-3">
           <h3 className="text-sm font-bold text-red-600 mb-2">📈 과다한 오행</h3>
@@ -338,18 +416,40 @@ function FiveElementInterpretation({ interp }: { interp: any }) {
           </div>
         </div>
       )}
+    </>
+  )
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">🌿 오행 분석</h2>
+      <BlurredContent
+        preview={
+          <div className="bg-slate-50 rounded-xl p-3">
+            <p className="text-sm text-slate-700 font-medium">{previewText}</p>
+          </div>
+        }
+        isUnlocked={isUnlocked}
+        onUnlock={onUnlock}
+        label="오행 과다/부족 상세 분석"
+      >
+        {fullContent}
+      </BlurredContent>
     </div>
   )
 }
 
-// ─── 십성 해석 ──────────────────────────────────────────
-function TenStarInterpretation({ interp }: { interp: any }) {
+// ─── 십성 해석 (광고 콘텐츠) ────────────────────────────
+function TenStarInterpretation({ interp, isUnlocked, onUnlock }: { interp: any; isUnlocked: boolean; onUnlock: () => void }) {
   if (!interp?.tenStars) return null
   const ts = interp.tenStars
   if (!ts.dominant && ts.excess.length === 0 && ts.lack.length === 0) return null
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">⭐ 십성 분석</h2>
+
+  const previewText = ts.dominant
+    ? `주요 십성: ${ts.dominant.star} (${ts.dominant.count}개)`
+    : '십성 분석 결과가 준비되었습니다'
+
+  const fullContent = (
+    <>
       {ts.dominant && (
         <div className="bg-purple-50 rounded-xl p-4 border border-purple-200 mb-3">
           <div className="flex items-center gap-2 mb-2">
@@ -391,42 +491,109 @@ function TenStarInterpretation({ interp }: { interp: any }) {
           </div>
         </div>
       )}
+    </>
+  )
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">⭐ 십성 분석</h2>
+      <BlurredContent
+        preview={
+          <div className="bg-purple-50 rounded-xl p-3">
+            <p className="text-sm text-slate-700 font-medium">👑 {previewText}</p>
+          </div>
+        }
+        isUnlocked={isUnlocked}
+        onUnlock={onUnlock}
+        label="십성 상세 분석 (주요/과다/부족)"
+      >
+        {fullContent}
+      </BlurredContent>
     </div>
   )
 }
 
-// ─── 신강/신약 해석 ─────────────────────────────────────
-function StrengthInterpretation({ interp }: { interp: any }) {
-  if (!interp?.strength) return null
-  const st = interp.strength
+// ─── 신강/신약 해석 (광고 콘텐츠) ───────────────────────
+function StrengthSection({ strength, yongsin, interp, isUnlocked, onUnlock }: {
+  strength: any; yongsin: any; interp: any; isUnlocked: boolean; onUnlock: () => void
+}) {
+  const st = interp?.strength
+
+  const fullContent = (
+    <>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+        <div className={`px-5 py-2 rounded-full text-lg font-bold text-center ${strength.result === '신강' ? 'bg-red-100 text-red-700' : strength.result === '신약' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+          {strength.result}
+        </div>
+        <div className="text-sm text-slate-500 text-center sm:text-left">
+          <span>돕는 힘 <strong>{strength.helpScore.toFixed(1)}</strong></span>
+          <span className="mx-2">vs</span>
+          <span>억제 힘 <strong>{strength.restrainScore.toFixed(1)}</strong></span>
+          <span className="ml-2 font-medium text-slate-700">(차이: {strength.score > 0 ? '+' : ''}{strength.score.toFixed(1)})</span>
+        </div>
+      </div>
+
+      {st && (
+        <div className="space-y-3">
+          <div className="bg-slate-50 rounded-xl p-4">
+            <TextWithLineBreaks text={`${st.symbol} ${st.short}`} className="text-sm text-slate-700 font-medium mb-1" />
+            <TextWithLineBreaks text={st.detail} className="text-xs text-slate-500 leading-relaxed" />
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+              <div className="font-bold text-blue-700 mb-1">💼 직업/적성</div>
+              <TextWithLineBreaks text={st.career} className="text-slate-600" />
+            </div>
+            <div className="bg-pink-50 rounded-lg p-3 border border-pink-200">
+              <div className="font-bold text-pink-700 mb-1">💕 대인관계</div>
+              <TextWithLineBreaks text={st.relationship} className="text-slate-600" />
+            </div>
+            <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+              <div className="font-bold text-amber-700 mb-1">💰 재물운</div>
+              <TextWithLineBreaks text={st.wealth} className="text-slate-600" />
+            </div>
+            <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+              <div className="font-bold text-green-700 mb-1">🏥 건강</div>
+              <TextWithLineBreaks text={st.health} className="text-slate-600" />
+            </div>
+          </div>
+          <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-200">
+            <div className="font-bold text-indigo-700 text-xs mb-1">💡 조언</div>
+            <TextWithLineBreaks text={st.advice} className="text-xs text-slate-600" />
+          </div>
+        </div>
+      )}
+
+      <div className="bg-indigo-50 rounded-xl p-4 mt-4">
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <span className="text-indigo-600 font-bold">용신(用神)</span>
+          <span className="px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-800 text-sm font-medium">{yongsin.yongsinKo} ({yongsin.yongsin})</span>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 text-sm">
+          <div><span className="text-green-600 font-medium">✅ 좋은 오행: </span><span className="text-slate-700">{yongsin.guide.favorableElements.join(', ')}</span></div>
+          <div><span className="text-red-600 font-medium">❌ 나쁜 오행: </span><span className="text-slate-700">{yongsin.guide.unfavorableElements.join(', ')}</span></div>
+        </div>
+      </div>
+    </>
+  )
+
   return (
-    <div className="space-y-3">
-      <div className="bg-slate-50 rounded-xl p-4">
-        <TextWithLineBreaks text={`${st.symbol} ${st.short}`} className="text-sm text-slate-700 font-medium mb-1" />
-        <TextWithLineBreaks text={st.detail} className="text-xs text-slate-500 leading-relaxed" />
-      </div>
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-          <div className="font-bold text-blue-700 mb-1">💼 직업/적성</div>
-          <TextWithLineBreaks text={st.career} className="text-slate-600" />
-        </div>
-        <div className="bg-pink-50 rounded-lg p-3 border border-pink-200">
-          <div className="font-bold text-pink-700 mb-1">💕 대인관계</div>
-          <TextWithLineBreaks text={st.relationship} className="text-slate-600" />
-        </div>
-        <div className="bg-amber-50 rounded-lg p-3 border border-amber-200">
-          <div className="font-bold text-amber-700 mb-1">💰 재물운</div>
-          <TextWithLineBreaks text={st.wealth} className="text-slate-600" />
-        </div>
-        <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-          <div className="font-bold text-green-700 mb-1">🏥 건강</div>
-          <TextWithLineBreaks text={st.health} className="text-slate-600" />
-        </div>
-      </div>
-      <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-200">
-        <div className="font-bold text-indigo-700 text-xs mb-1">💡 조언</div>
-        <TextWithLineBreaks text={st.advice} className="text-xs text-slate-600" />
-      </div>
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-4">⚖️ 신강/신약 · 용신 분석</h2>
+      <LockedGuide
+        items={[
+          '신강/신약 판단 결과 및 점수',
+          '용신(用神) — 당신에게 필요한 오행',
+          '직업/적성 맞춤 분석',
+          '대인관계 · 재물운 · 건강 분석',
+          '좋은 오행 / 나쁜 오행 안내',
+          '종합 조언',
+        ]}
+        isUnlocked={isUnlocked}
+        onUnlock={onUnlock}
+      >
+        {fullContent}
+      </LockedGuide>
     </div>
   )
 }
@@ -540,8 +707,8 @@ function GwiinSection({ gwiin }: { gwiin: any }) {
   )
 }
 
-// ─── 오늘의 운세 섹션 ───────────────────────────────────
-function DailyFortuneSection({ interp, fortune }: { interp: any; fortune: any }) {
+// ─── 오늘의 운세 (광고 콘텐츠) ──────────────────────────
+function DailyFortuneSection({ interp, fortune, isUnlocked, onUnlock }: { interp: any; fortune: any; isUnlocked: boolean; onUnlock: () => void }) {
   if (!interp?.dailyFortune) return null
   const df = interp.dailyFortune
   const today = new Date()
@@ -549,22 +716,9 @@ function DailyFortuneSection({ interp, fortune }: { interp: any; fortune: any })
   const dailyGanjiChar = fortune?.daily?.fortune?.ganjiChar || ''
   const dailyGanjiName = fortune?.daily?.fortune?.ganjiName || ''
   const filledStars = Math.max(1, Math.min(5, df.rating))
-  const starDisplay = '★'.repeat(filledStars) + '☆'.repeat(5 - filledStars)
 
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-1">🔮 오늘의 운세</h2>
-      <p className="text-xs text-slate-400 mb-3">{dateStr}{dailyGanjiChar && ` · ${dailyGanjiChar}(${dailyGanjiName})일`}</p>
-      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{df.ratingEmoji}</span>
-            <span className="font-bold text-lg text-slate-800">{df.theme}</span>
-          </div>
-          <span className="text-lg text-amber-500 tracking-tighter leading-none">{starDisplay}</span>
-        </div>
-        <p className="text-sm text-slate-700 font-medium">{df.short}</p>
-      </div>
+  const fullContent = (
+    <>
       <div className="bg-slate-50 rounded-xl p-3 mb-3">
         <TextWithLineBreaks text={df.detail} className="text-xs sm:text-sm text-slate-600 leading-relaxed" />
       </div>
@@ -594,6 +748,34 @@ function DailyFortuneSection({ interp, fortune }: { interp: any; fortune: any })
         <div className="text-xs font-bold text-red-600 mb-1">⚠️ 주의사항</div>
         <p className="text-xs text-slate-600">{df.caution}</p>
       </div>
+    </>
+  )
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-1">🔮 오늘의 운세</h2>
+      <p className="text-xs text-slate-400 mb-3">{dateStr}{dailyGanjiChar && ` · ${dailyGanjiChar}(${dailyGanjiName})일`}</p>
+
+      <BlurredContent
+        preview={
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-lg text-slate-800">{df.theme}</span>
+              <div className="flex gap-0.5">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <span key={i} className={`text-lg ${i < filledStars ? 'text-amber-400' : 'text-slate-200'}`}>★</span>
+                ))}
+              </div>
+            </div>
+            <p className="text-sm text-slate-700 font-medium">{df.short}</p>
+          </div>
+        }
+        isUnlocked={isUnlocked}
+        onUnlock={onUnlock}
+        label="오늘의 운세 상세 + 행운 정보"
+      >
+        {fullContent}
+      </BlurredContent>
     </div>
   )
 }
@@ -715,7 +897,7 @@ function DaewoonSection({ daewoon, birthYear, input }: { daewoon: any; birthYear
                 <div className="mt-3 bg-amber-50 rounded-xl p-3 sm:p-4">
                   <div className="text-sm font-medium text-amber-700 mb-2">{selectedFortune.year}년 세운: {selectedFortune.fortune?.fortune?.ganjiChar} ({selectedFortune.fortune?.fortune?.ganjiName})</div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-white rounded-lg p-2"><span className="text-slate-500">천간 십성: </span><span className="font-medium">{selectedFortune.fortune?.fortune?.tenStar?.stemStar || '-'}</span></div>
+                                        <div className="bg-white rounded-lg p-2"><span className="text-slate-500">천간 십성: </span><span className="font-medium">{selectedFortune.fortune?.fortune?.tenStar?.stemStar || '-'}</span></div>
                     <div className="bg-white rounded-lg p-2"><span className="text-slate-500">지지 십성: </span><span className="font-medium">{selectedFortune.fortune?.fortune?.tenStar?.branchMainStar || '-'}</span></div>
                   </div>
                   {selectedFortune.fortune?.fortune?.interactions && (<div className="mt-2">{renderInteractions(selectedFortune.fortune.fortune.interactions)}</div>)}
@@ -747,8 +929,20 @@ export default function SajuResult({ result }: { result: any }) {
   const { pillars, dayStem, tenStars, strength, yongsin, daewoon, fortune, gongmang, gwiin, interpretation, monthSolarTerm, meta, input } = result
   const birthYear = input?.year || 1990
 
+  // 광고 잠금 상태 관리
+  const [unlockedSections, setUnlockedSections] = useState<Record<string, boolean>>({})
+
+  function handleUnlock(section: string) {
+    // TODO: 실제 광고 연동 시 여기서 광고 호출
+    // 지금은 즉시 해제 (테스트용)
+    setUnlockedSections(prev => ({ ...prev, [section]: true }))
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
+
+      {/* ━━━ 무료 영역 ━━━━━━━━━━━━━━━━━━━━ */}
+
       {/* ① 사주 원국 */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
         <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-1">📋 사주 원국</h2>
@@ -765,10 +959,7 @@ export default function SajuResult({ result }: { result: any }) {
         <FiveElementBar counts={getFiveElementCounts(result)} />
       </div>
 
-      {/* ④ 오행 분석 */}
-      <FiveElementInterpretation interp={interpretation} />
-
-      {/* ⑤ 십성 분포 */}
+      {/* ④ 십성 분포 */}
       {tenStars && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
           <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-4">⭐ 십성 분포</h2>
@@ -776,52 +967,61 @@ export default function SajuResult({ result }: { result: any }) {
         </div>
       )}
 
-      {/* ⑥ 십성 분석 */}
-      <TenStarInterpretation interp={interpretation} />
-
-      {/* ⑦ 신강/신약 + 용신 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-        <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-4">⚖️ 신강/신약 판단</h2>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-          <div className={`px-5 py-2 rounded-full text-lg font-bold text-center ${strength.result === '신강' ? 'bg-red-100 text-red-700' : strength.result === '신약' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-            {strength.result}
-          </div>
-          <div className="text-sm text-slate-500 text-center sm:text-left">
-            <span>돕는 힘 <strong>{strength.helpScore.toFixed(1)}</strong></span>
-            <span className="mx-2">vs</span>
-            <span>억제 힘 <strong>{strength.restrainScore.toFixed(1)}</strong></span>
-            <span className="ml-2 font-medium text-slate-700">(차이: {strength.score > 0 ? '+' : ''}{strength.score.toFixed(1)})</span>
-          </div>
-        </div>
-        <StrengthInterpretation interp={interpretation} />
-        <div className="bg-indigo-50 rounded-xl p-4 mt-4">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="text-indigo-600 font-bold">용신(用神)</span>
-            <span className="px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-800 text-sm font-medium">{yongsin.yongsinKo} ({yongsin.yongsin})</span>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 text-sm">
-            <div><span className="text-green-600 font-medium">✅ 좋은 오행: </span><span className="text-slate-700">{yongsin.guide.favorableElements.join(', ')}</span></div>
-            <div><span className="text-red-600 font-medium">❌ 나쁜 오행: </span><span className="text-slate-700">{yongsin.guide.unfavorableElements.join(', ')}</span></div>
-          </div>
-        </div>
-      </div>
-
-      {/* ⑧ 공망 */}
+      {/* ⑤ 공망 */}
       <GongmangSection gongmang={gongmang} />
 
-      {/* ⑨ 천을귀인 */}
+      {/* ⑥ 천을귀인 */}
       <GwiinSection gwiin={gwiin} />
 
-      {/* ⑩ 오늘의 운세 */}
-      <DailyFortuneSection interp={interpretation} fortune={fortune} />
-
-      {/* ⑪ 대운 + 세운 */}
+      {/* ⑦ 대운 + 세운 */}
       {daewoon && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 overflow-hidden">
           <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-4">🌊 대운 · 세운</h2>
           <DaewoonSection daewoon={daewoon} birthYear={birthYear} input={input} />
         </div>
       )}
+
+      {/* ━━━ 상세 분석 (광고 후 제공) ━━━━━━━━━━━━━━━ */}
+
+      <div className="relative py-4">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-slate-200"></div>
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-slate-50 px-4 text-sm font-medium text-slate-500">📊 상세 분석</span>
+        </div>
+      </div>
+
+      {/* ⑧ 오행 분석 (🔓 광고) */}
+      <FiveElementInterpretation
+        interp={interpretation}
+        isUnlocked={!!unlockedSections['fiveElement']}
+        onUnlock={() => handleUnlock('fiveElement')}
+      />
+
+      {/* ⑨ 십성 분석 (🔓 광고) */}
+      <TenStarInterpretation
+        interp={interpretation}
+        isUnlocked={!!unlockedSections['tenStar']}
+        onUnlock={() => handleUnlock('tenStar')}
+      />
+
+      {/* ⑩ 신강/신약 · 용신 (🔓 광고) */}
+      <StrengthSection
+        strength={strength}
+        yongsin={yongsin}
+        interp={interpretation}
+        isUnlocked={!!unlockedSections['strength']}
+        onUnlock={() => handleUnlock('strength')}
+      />
+
+      {/* ⑪ 오늘의 운세 (🔓 광고) */}
+      <DailyFortuneSection
+        interp={interpretation}
+        fortune={fortune}
+        isUnlocked={!!unlockedSections['dailyFortune']}
+        onUnlock={() => handleUnlock('dailyFortune')}
+      />
 
       {/* ⑫ 경고 */}
       {meta.warnings && meta.warnings.length > 0 && (
