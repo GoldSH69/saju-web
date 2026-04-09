@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import Navigation from '@/components/Navigation'
+import VisitorTracker from '@/components/VisitorTracker'
 
 export const metadata: Metadata = {
   title: '사주명리학 - 무료 사주팔자 계산',
@@ -25,6 +26,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <VisitorTracker />
         <div className="min-h-screen flex flex-col bg-slate-50">
           <Navigation />
           <main className="flex-1">

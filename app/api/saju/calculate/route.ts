@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { calculateSaju, generateInterpretation } from 'saju-engine'
 import type { CalculateInput } from 'saju-engine'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    // ── Rate Limit: IP당 1분에 10회 ──
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const limit = checkRateLimit(ip, 'saju-calculate', 10, 60)
 
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: `요청이 너무 많습니다. ${limit.resetInSeconds}초 후 다시 시도해주세요.` },
+        { status: 429, headers: { 'Retry-After': String(limit.resetInSeconds) } }
+      )
+    }
+
+    const body = await request.json()
     const { year, month, day, hour, minute, gender, timeOption, birthTimeUnknown } = body
 
     if (!year || !month || !day) {
@@ -36,11 +48,18 @@ export async function POST(request: NextRequest) {
     }
 
     const result = calculateSaju(input)
-
-    // ★ 해석 템플릿 생성
     const interpretation = generateInterpretation(result)
 
-    // 프론트에 필요한 데이터를 직접 구성
+    // ── saju_calculations 카운트 +1 (fire-and-forget) ──
+    try {
+      const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000)
+      const statDate = kstNow.toISOString().split('T')[0]
+      const supabase = createAdminClient()
+      await supabase.rpc('increment_saju_calculations', { p_date: statDate })
+    } catch {
+      // 통계 실패는 무시 (사주 계산 결과에 영향 없음)
+    }
+
     const response = {
       input: result.input,
       adjustedTime: result.adjustedTime,
@@ -80,16 +99,12 @@ export async function POST(request: NextRequest) {
       yongsin: result.yongsin,
       daewoon: result.daewoon,
       fortune: result.fortune,
-
-      // ★ 공망
       gongmang: result.gongmang ? {
         yearGongmang: result.gongmang.yearGongmang,
         dayGongmang: result.gongmang.dayGongmang,
         branchStatus: result.gongmang.branchStatus,
         summary: result.gongmang.summary,
       } : null,
-
-      // ★ 천을귀인
       gwiin: result.gwiin ? {
         dayStem: result.gwiin.dayStem,
         gwiinPair: result.gwiin.gwiinPair,
@@ -98,10 +113,7 @@ export async function POST(request: NextRequest) {
         gwiinPositions: result.gwiin.gwiinPositions,
         summary: result.gwiin.summary,
       } : null,
-
-      // ★ 해석 템플릿
       interpretation,
-
       monthSolarTerm: {
         name: result.monthSolarTerm.name,
         dateTime: result.monthSolarTerm.dateTime,
@@ -119,7 +131,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 기둥 → JSON 변환
 function pillarToJson(p: any) {
   return {
     stem: {

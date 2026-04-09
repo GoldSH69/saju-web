@@ -717,8 +717,19 @@ function DailyFortuneSection({ interp, fortune, isUnlocked, onUnlock }: { interp
   const dailyGanjiName = fortune?.daily?.fortune?.ganjiName || ''
   const filledStars = Math.max(1, Math.min(5, df.rating))
 
-  const fullContent = (
+    const fullContent = (
     <>
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-bold text-lg text-slate-800">{df.theme}</span>
+          <div className="flex gap-0.5">
+            {Array.from({ length: 5 }, (_, i) => (
+              <span key={i} className={`text-lg ${i < filledStars ? 'text-amber-400' : 'text-slate-200'}`}>★</span>
+            ))}
+          </div>
+        </div>
+        <p className="text-sm text-slate-700 font-medium">{df.short}</p>
+      </div>
       <div className="bg-slate-50 rounded-xl p-3 mb-3">
         <TextWithLineBreaks text={df.detail} className="text-xs sm:text-sm text-slate-600 leading-relaxed" />
       </div>

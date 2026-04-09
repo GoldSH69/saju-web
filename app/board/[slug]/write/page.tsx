@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -24,6 +24,56 @@ export default function BoardWritePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // reCAPTCHA v3 스크립트 로드
+  // reCAPTCHA v3 스크립트 로드 + 페이지 떠날 때 제거
+      // reCAPTCHA v3 스크립트 로드 + 배지 표시/숨김
+  useEffect(() => {
+    const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+    if (!siteKey) return
+
+    const w = window as any
+
+    // 이미 로드됨 → 배지만 다시 표시
+    if (w.grecaptcha) {
+      const badge = document.querySelector('.grecaptcha-badge') as HTMLElement
+      if (badge) badge.style.visibility = 'visible'
+      return () => {
+        const badge = document.querySelector('.grecaptcha-badge') as HTMLElement
+        if (badge) badge.style.visibility = 'hidden'
+      }
+    }
+
+    // 첫 로드 → 스크립트 추가
+    if (!document.querySelector(`script[src*="recaptcha"]`)) {
+      const script = document.createElement('script')
+      script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`
+      script.async = true
+      document.head.appendChild(script)
+    }
+
+    return () => {
+      const badge = document.querySelector('.grecaptcha-badge') as HTMLElement
+      if (badge) badge.style.visibility = 'hidden'
+    }
+  }, [])
+
+  // reCAPTCHA 토큰 발급
+  const getRecaptchaToken = useCallback((): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY
+      if (!siteKey) return resolve('')  // 키 없으면 스킵
+
+      const w = window as unknown as { grecaptcha?: { ready: (cb: () => void) => void; execute: (key: string, opts: { action: string }) => Promise<string> } }
+      if (!w.grecaptcha) return resolve('')
+
+      w.grecaptcha.ready(() => {
+        w.grecaptcha!.execute(siteKey, { action: 'board_write' })
+          .then(resolve)
+          .catch(reject)
+      })
+    })
+  }, [])
+
   useEffect(() => {
     fetch(`/api/board/posts?category=${slug}&limit=1`)
       .then((res) => res.json())
@@ -38,6 +88,8 @@ export default function BoardWritePage() {
     setLoading(true)
 
     try {
+      const recaptchaToken = await getRecaptchaToken()
+
       const res = await fetch('/api/board/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,6 +100,7 @@ export default function BoardWritePage() {
           author_type: 'guest',
           guest_nickname: nickname.trim(),
           guest_password: password,
+          recaptchaToken,
         }),
       })
 
@@ -79,22 +132,18 @@ export default function BoardWritePage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      {/* 헤더 */}
       <Link href={`/board/${slug}`} className="text-sm text-slate-400 hover:text-slate-600">
         ← {category?.name || '게시판'} 목록
       </Link>
       <h1 className="text-2xl font-bold text-slate-700 mt-2 mb-6">✏️ 글쓰기</h1>
 
-      {/* 에러 */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4 text-sm">
           <p className="text-red-600">{error}</p>
         </div>
       )}
 
-      {/* 폼 */}
       <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-4">
-        {/* 닉네임 + 비밀번호 */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm text-slate-500 mb-1">닉네임 *</label>
@@ -125,7 +174,6 @@ export default function BoardWritePage() {
           </div>
         </div>
 
-        {/* 제목 */}
         <div>
           <label className="block text-sm text-slate-500 mb-1">제목 *</label>
           <input
@@ -139,7 +187,6 @@ export default function BoardWritePage() {
           />
         </div>
 
-        {/* 내용 */}
         <div>
           <label className="block text-sm text-slate-500 mb-1">
             내용 * ({content.length}/5000)
@@ -155,7 +202,6 @@ export default function BoardWritePage() {
           />
         </div>
 
-        {/* 버튼 */}
         <div className="flex gap-3 justify-end pt-2">
           <Link
             href={`/board/${slug}`}
@@ -171,6 +217,9 @@ export default function BoardWritePage() {
             {loading ? '작성 중...' : '작성하기'}
           </button>
         </div>
+          <p className="text-[10px] text-slate-300 text-center pt-2">
+          이 사이트는 reCAPTCHA로 보호되며 Google <a href="https://policies.google.com/privacy" className="underline" target="_blank">개인정보처리방침</a>과 <a href="https://policies.google.com/terms" className="underline" target="_blank">이용약관</a>이 적용됩니다.
+          </p>
       </form>
     </div>
   )

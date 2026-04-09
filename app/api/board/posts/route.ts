@@ -3,6 +3,26 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { hashPassword, getClientIP } from '@/lib/board-utils'
 
 // ────────────────────────────────────
+// reCAPTCHA v3 검증
+// ────────────────────────────────────
+async function verifyRecaptcha(token: string): Promise<boolean> {
+  const secret = process.env.RECAPTCHA_SECRET_KEY
+  if (!secret) return true  // 키 미설정 시 스킵 (개발용)
+
+  try {
+    const res = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `secret=${secret}&response=${token}`,
+    })
+    const data = await res.json()
+    return data.success && data.score >= 0.3
+  } catch {
+    return false
+  }
+}
+
+// ────────────────────────────────────
 // GET: 글 목록 (?category=slug&page=1&limit=20)
 // ────────────────────────────────────
 export async function GET(request: NextRequest) {
@@ -19,7 +39,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'category 파라미터 필요' }, { status: 400 })
     }
 
-    // 카테고리 조회
     const { data: category, error: catError } = await supabase
       .from('board_categories')
       .select('*')
@@ -30,14 +49,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '카테고리를 찾을 수 없습니다' }, { status: 404 })
     }
 
-    // 총 게시글 수
     const { count } = await supabase
       .from('board_posts')
       .select('*', { count: 'exact', head: true })
       .eq('category_id', category.id)
       .is('deleted_at', null)
 
-    // 게시글 목록 (고정글 우선 → 최신순)
     const { data: posts, error: postsError } = await supabase
       .from('board_posts')
       .select(
@@ -72,7 +89,12 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createAdminClient()
     const body = await request.json()
-    const { category_slug, title, content, author_type, guest_nickname, guest_password } = body
+    const { category_slug, title, content, author_type, guest_nickname, guest_password, recaptchaToken } = body
+
+    // ── reCAPTCHA 검증 ──
+    if (!recaptchaToken || !(await verifyRecaptcha(recaptchaToken))) {
+      return NextResponse.json({ error: '보안 검증에 실패했습니다. 새로고침 후 다시 시도해주세요' }, { status: 403 })
+    }
 
     // ── 기본 검증 ──
     if (!category_slug || !title || !content || !author_type) {
@@ -116,7 +138,6 @@ export async function POST(request: NextRequest) {
     const ip = getClientIP(request)
 
     if (author_type === 'guest') {
-      // 1분 간격
       const oneMinAgo = new Date(Date.now() - 60_000).toISOString()
       const { data: recent } = await supabase
         .from('board_posts')
@@ -129,7 +150,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: '1분 후에 다시 작성해주세요' }, { status: 429 })
       }
 
-      // 하루 10건
       const todayStart = new Date()
       todayStart.setHours(0, 0, 0, 0)
       const { count: dailyCount } = await supabase
