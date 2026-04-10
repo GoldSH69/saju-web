@@ -45,6 +45,13 @@ const BRANCH_ELEMENT_MAP = {
 // ============================================================
 // 공개 함수
 // ============================================================
+// ============================================================
+// 위치별 가중치 (C1: 오행 가중치 고도화)
+// ============================================================
+/** 천간 위치별 가중치 [년간, 월간, 일간, 시간] */
+const STEM_POSITION_WEIGHTS = [25, 35, 30, 20];
+/** 지장간 위치별 배율 [년지, 월지, 일지, 시지] */
+const BRANCH_POSITION_MULTIPLIERS = [0.8, 1.5, 1.2, 0.8];
 /**
  * 천간의 오행 정보 반환
  */
@@ -90,13 +97,12 @@ function analyzeFiveElements(stemChars, branchChars) {
     const totalElements = emptyCount();
     const weightedElements = emptyCount();
     const details = [];
-    // ──────────── 1. 표면 천간 분석 ────────────
+    // ──────────── 1. 표면 천간 분석 (위치별 가중치) ────────────
     for (let i = 0; i < stemChars.length; i++) {
         const info = getStemElement(stemChars[i]);
         stemElements[info.element]++;
         totalElements[info.element]++;
-        // 표면 천간 가중치: 1.0 (30일 기준으로 환산하지 않음)
-        weightedElements[info.element] += 30;
+        weightedElements[info.element] += STEM_POSITION_WEIGHTS[i] ?? 20;
         details.push({
             position: positions[i],
             char: stemChars[i],
@@ -117,13 +123,14 @@ function analyzeFiveElements(stemChars, branchChars) {
             isHidden: false,
         });
     }
-    // ──────────── 3. 지장간 분석 ────────────
+    // ──────────── 3. 지장간 분석 (위치별 배율) ────────────
     for (let i = 0; i < branchChars.length; i++) {
         const hiddenStems = (0, hiddenStems_1.getHiddenStems)(branchChars[i]);
+        const multiplier = BRANCH_POSITION_MULTIPLIERS[i] ?? 0.8;
         for (const hidden of hiddenStems) {
             const info = getStemElement(hidden.char);
             totalElements[info.element]++;
-            weightedElements[info.element] += hidden.days;
+            weightedElements[info.element] += Math.round(hidden.days * multiplier * 10) / 10;
             details.push({
                 position: `${branchPositions[i]}→${hidden.roleName}`,
                 char: hidden.char,
@@ -137,7 +144,6 @@ function analyzeFiveElements(stemChars, branchChars) {
     }
     // ──────────── 4. 분석 ────────────
     const ALL_ELEMENTS = ['木', '火', '土', '金', '水'];
-    // 가장 강한/약한 오행 (가중치 기준)
     let strongest = '木';
     let weakest = '木';
     let maxVal = -1;
@@ -152,10 +158,12 @@ function analyzeFiveElements(stemChars, branchChars) {
             weakest = el;
         }
     }
-    // 없는 오행
     const missing = ALL_ELEMENTS.filter(el => totalElements[el] === 0);
-    // 일간 오행
     const dayStemInfo = getStemElement(stemChars[2]);
+    // 월령 오행 (월지 = branchChars[1])
+    const monthElement = branchChars.length >= 2
+        ? getBranchElement(branchChars[1]).element
+        : dayStemInfo.element;
     return {
         stemElements,
         branchElements,
@@ -166,6 +174,7 @@ function analyzeFiveElements(stemChars, branchChars) {
         missing,
         dayStemElement: dayStemInfo.element,
         dayStemYinYang: dayStemInfo.yinYang,
+        monthElement,
         details,
     };
 }

@@ -36,6 +36,8 @@ export interface FiveElementAnalysis {
     dayStemElement: FiveElement;
     /** 일간의 음양 */
     dayStemYinYang: YinYang;
+    /** 월령 오행 (월지의 대표 오행) */
+    monthElement: FiveElement;
     /** 상세 내역 (디버그/표시용) */
     details: ElementDetail[];
 }

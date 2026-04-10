@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { migrateOldSavedData } from '@/lib/saved-saju'
 
 interface SajuFormData {
+  name: string
   year: number
   month: number
   day: number
@@ -16,64 +18,52 @@ interface SajuFormData {
 interface SajuFormProps {
   onSubmit: (data: SajuFormData) => void
   isLoading: boolean
+  /** 외부에서 폼 값을 채울 때 사용 (사주리스트 클릭 시) */
+  initialData?: {
+    name?: string
+    year: number
+    month: number
+    day: number
+    hour: number | null
+    minute: number | null
+    gender: 'male' | 'female'
+    timeOption: 'standard30' | 'none'
+    birthTimeUnknown: boolean
+  }
 }
 
-const STORAGE_KEY = 'saju-form-saved'
-
-interface SavedData {
-  year: number
-  month: number
-  day: number
-  hour: number
-  minute: number
-  gender: 'male' | 'female'
-  timeOption: 'standard30' | 'none'
-  birthTimeUnknown: boolean
-}
-
-export default function SajuForm({ onSubmit, isLoading }: SajuFormProps) {
+export default function SajuForm({ onSubmit, isLoading, initialData }: SajuFormProps) {
   const currentYear = new Date().getFullYear()
 
-  const [year, setYear] = useState(1990)
-  const [month, setMonth] = useState(1)
-  const [day, setDay] = useState(1)
-  const [hour, setHour] = useState(12)
-  const [minute, setMinute] = useState(0)
-  const [gender, setGender] = useState<'male' | 'female'>('male')
-  const [timeOption, setTimeOption] = useState<'standard30' | 'none'>('standard30')
-  const [birthTimeUnknown, setBirthTimeUnknown] = useState(false)
-  const [saveInput, setSaveInput] = useState(false)
-  const [loaded, setLoaded] = useState(false)
+  const [name, setName] = useState(initialData?.name ?? '')
+  const [year, setYear] = useState(initialData?.year ?? 1990)
+  const [month, setMonth] = useState(initialData?.month ?? 1)
+  const [day, setDay] = useState(initialData?.day ?? 1)
+  const [hour, setHour] = useState(initialData?.hour ?? 12)
+  const [minute, setMinute] = useState(initialData?.minute ?? 0)
+  const [gender, setGender] = useState<'male' | 'female'>(initialData?.gender ?? 'male')
+  const [timeOption, setTimeOption] = useState<'standard30' | 'none'>(initialData?.timeOption ?? 'standard30')
+  const [birthTimeUnknown, setBirthTimeUnknown] = useState(initialData?.birthTimeUnknown ?? false)
 
-  // ─── 저장된 값 불러오기 ────────────────────────────────
+  // ─── 기존 1명 데이터 → 새 리스트로 마이그레이션 ──────
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) {
-        const data: SavedData = JSON.parse(saved)
-        setYear(data.year)
-        setMonth(data.month)
-        setDay(data.day)
-        setHour(data.hour)
-        setMinute(data.minute)
-        setGender(data.gender)
-        setTimeOption(data.timeOption)
-        setBirthTimeUnknown(data.birthTimeUnknown)
-        setSaveInput(true)
-      }
-    } catch (e) {
-      // 무시
-    }
-    setLoaded(true)
+    migrateOldSavedData()
   }, [])
 
-  // ─── 저장 체크 변경 시 ─────────────────────────────────
-  function handleSaveToggle(checked: boolean) {
-    setSaveInput(checked)
-    if (!checked) {
-      localStorage.removeItem(STORAGE_KEY)
+  // ─── initialData 변경 시 폼 갱신 (리스트 클릭 시) ────
+  useEffect(() => {
+    if (initialData) {
+      setName(initialData.name ?? '')
+      setYear(initialData.year)
+      setMonth(initialData.month)
+      setDay(initialData.day)
+      setHour(initialData.hour ?? 12)
+      setMinute(initialData.minute ?? 0)
+      setGender(initialData.gender)
+      setTimeOption(initialData.timeOption)
+      setBirthTimeUnknown(initialData.birthTimeUnknown)
     }
-  }
+  }, [initialData])
 
   // ─── 제출 ──────────────────────────────────────────────
   function getMaxDay(y: number, m: number): number {
@@ -85,7 +75,13 @@ export default function SajuForm({ onSubmit, isLoading }: SajuFormProps) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
+    if (!name.trim()) {
+      alert('이름(별명)을 입력해주세요.')
+      return
+    }
+
     const formData: SajuFormData = {
+      name: name.trim(),
       year,
       month,
       day: Math.min(day, maxDay),
@@ -96,23 +92,26 @@ export default function SajuForm({ onSubmit, isLoading }: SajuFormProps) {
       birthTimeUnknown,
     }
 
-    // 저장 체크 시 localStorage에 저장
-    if (saveInput) {
-      const saveData: SavedData = {
-        year, month, day: Math.min(day, maxDay),
-        hour, minute, gender, timeOption, birthTimeUnknown,
-      }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(saveData))
-    }
-
     onSubmit(formData)
   }
 
-  // 로드 전에는 렌더 안 함 (깜빡임 방지)
-  if (!loaded) return null
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* 이름(별명) */}
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">이름 (별명)</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="예: 홍길동, 나, 엄마"
+          maxLength={20}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-400"
+          required
+        />
+        <p className="text-xs text-slate-400 mt-1">* 필수 입력 — 사주리스트 저장 시 이름으로 사용됩니다</p>
+      </div>
+
       {/* 성별 */}
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-2">성별</label>
@@ -197,20 +196,6 @@ export default function SajuForm({ onSubmit, isLoading }: SajuFormProps) {
           <p className="text-xs text-slate-400 mt-1">한국 표준시(동경 135°)와 실제 경도(127.5°) 차이 30분 보정</p>
         </div>
       )}
-
-      {/* ★ 입력값 저장 체크박스 */}
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="saveInput"
-          checked={saveInput}
-          onChange={(e) => handleSaveToggle(e.target.checked)}
-          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-        />
-        <label htmlFor="saveInput" className="text-sm text-slate-600 cursor-pointer">
-          💾 입력 정보 저장 (다음 방문 시 자동 입력)
-        </label>
-      </div>
 
       {/* 제출 버튼 */}
       <button type="submit" disabled={isLoading}

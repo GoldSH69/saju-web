@@ -105,8 +105,8 @@ function LockedGuide({
 }) {
   if (isUnlocked) return <>{children}</>
   return (
-    <div className="text-center py-6">
-      <div className="bg-slate-50 rounded-xl p-5 mb-4 text-left inline-block w-full max-w-sm">
+    <div className="flex flex-col items-center py-6">
+      <div className="bg-slate-50 rounded-xl p-5 mb-4 text-left w-full max-w-sm">
         <p className="text-sm font-bold text-slate-700 mb-3">📋 포함 내용</p>
         <ul className="space-y-1.5">
           {items.map((item, i) => (
@@ -374,15 +374,123 @@ function DayStemInterpretation({ interp }: { interp: any }) {
 
 // ─── 오행 해석 (광고 콘텐츠) ────────────────────────────
 function FiveElementInterpretation({ interp, isUnlocked, onUnlock }: { interp: any; isUnlocked: boolean; onUnlock: () => void }) {
-  if (!interp?.fiveElements) return null
-  const fe = interp.fiveElements
-  if (fe.excess.length === 0 && fe.lack.length === 0) return null
+  const dfe = interp?.detailedFiveElements
+  const fe = interp?.fiveElements
+  if (!dfe && (!fe || (fe.excess.length === 0 && fe.lack.length === 0))) return null
 
-  const previewText = fe.excess.length > 0
-    ? `${fe.excess[0].elementKo}이(가) ${fe.excess[0].count}개로 강합니다`
-    : `${fe.lack[0].elementKo}이(가) 부족합니다`
+  const previewText = dfe
+    ? `오행 균형 점수: ${dfe.balance.score}점 (${dfe.balance.type}) · 최강: ${dfe.scoreRanking[0]?.ko}`
+    : fe.excess.length > 0
+      ? `${fe.excess[0].elementKo}이(가) ${fe.excess[0].count}개로 강합니다`
+      : `${fe.lack[0].elementKo}이(가) 부족합니다`
 
-  const fullContent = (
+  const RANK_BAR_COLORS: Record<string, string> = {
+    '木': 'bg-green-500', '火': 'bg-red-500', '土': 'bg-yellow-400', '金': 'bg-gray-300', '水': 'bg-slate-800',
+  }
+
+  const fullContent = dfe ? (
+    <>
+      {/* 가중치 점수 순위 */}
+      <div className="mb-4">
+        <h3 className="text-sm font-bold text-slate-700 mb-2">📊 오행 가중치 점수</h3>
+        <div className="space-y-2">
+          {dfe.scoreRanking.map((item: any, i: number) => {
+            const statusColor =
+              item.status === '과다' ? 'text-red-600' :
+              item.status === '강함' ? 'text-orange-600' :
+              item.status === '결핍' ? 'text-blue-600' :
+              item.status === '약함' ? 'text-sky-600' : 'text-slate-600'
+            const barWidth = Math.max(5, item.percent)
+            const barColor = RANK_BAR_COLORS[item.element] || 'bg-slate-400'
+            return (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-xs w-14 text-slate-600 font-medium">{item.ko}</span>
+                <div className="flex-1 bg-slate-100 rounded-full h-5 overflow-hidden">
+                  <div className={`${barColor} h-full rounded-full flex items-center justify-end pr-2`} style={{ width: `${barWidth}%` }}>
+                    {item.percent >= 15 && <span className="text-[10px] text-white font-bold">{item.score}</span>}
+                  </div>
+                </div>
+                {item.percent < 15 && <span className="text-[10px] text-slate-500">{item.score}</span>}
+                <span className={`text-[10px] font-bold w-8 ${statusColor}`}>{item.status}</span>
+                <span className="text-[10px] text-slate-400 w-8">{item.percent}%</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 최강/최약 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+        <div className="bg-red-50 rounded-xl p-3 border border-red-200">
+          <div className="text-xs font-bold text-red-700 mb-1">📈 최강 오행</div>
+          <TextWithLineBreaks text={dfe.strongestText} className="text-xs text-slate-600 leading-relaxed" />
+        </div>
+        <div className="bg-blue-50 rounded-xl p-3 border border-blue-200">
+          <div className="text-xs font-bold text-blue-700 mb-1">📉 최약 오행</div>
+          <TextWithLineBreaks text={dfe.weakestText} className="text-xs text-slate-600 leading-relaxed" />
+        </div>
+      </div>
+
+      {/* 월령 분석 */}
+      <div className="bg-amber-50 rounded-xl p-3 border border-amber-200 mb-4">
+        <div className="text-xs font-bold text-amber-700 mb-1">🌙 월령(출생 계절) — {dfe.monthAnalysis.ko} ({dfe.monthAnalysis.season})</div>
+        <p className="text-xs text-slate-600 mb-1">{dfe.monthAnalysis.description}</p>
+        <p className="text-xs text-slate-700 font-medium">{dfe.monthAnalysis.relation}</p>
+      </div>
+
+      {/* 균형 진단 */}
+      <div className="bg-slate-50 rounded-xl p-3 mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-bold text-slate-700">⚖️ 균형 진단</span>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+            dfe.balance.score >= 80 ? 'bg-green-100 text-green-700' :
+            dfe.balance.score >= 60 ? 'bg-yellow-100 text-yellow-700' :
+            dfe.balance.score >= 40 ? 'bg-orange-100 text-orange-700' :
+            'bg-red-100 text-red-700'
+          }`}>{dfe.balance.score}점 · {dfe.balance.type}</span>
+        </div>
+        <div className="w-full bg-slate-200 rounded-full h-3 mb-2">
+          <div className={`h-full rounded-full ${
+            dfe.balance.score >= 80 ? 'bg-green-500' :
+            dfe.balance.score >= 60 ? 'bg-yellow-500' :
+            dfe.balance.score >= 40 ? 'bg-orange-500' : 'bg-red-500'
+          }`} style={{ width: `${dfe.balance.score}%` }}></div>
+        </div>
+        <p className="text-xs text-slate-600">{dfe.balance.description}</p>
+      </div>
+
+      {/* 위치별 오행 배치 */}
+      {dfe.positionAnalysis.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-slate-700 mb-2">📍 위치별 오행 배치</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {dfe.positionAnalysis.map((pa: any, i: number) => (
+              <div key={i} className={`rounded-lg p-2.5 border ${pa.position === '일간' ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-slate-200'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold text-slate-700">{pa.label}</span>
+                  <span className="text-xs text-slate-500">{pa.elementKo} {pa.char}</span>
+                </div>
+                <div className="text-[10px] text-slate-400 mb-1">{pa.meaning}</div>
+                <p className="text-xs text-slate-600">{pa.interpretation}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 보충 추천 */}
+      <div className="bg-green-50 rounded-xl p-3 border border-green-200">
+        <div className="text-xs font-bold text-green-700 mb-2">💡 오행 보충 추천 — {dfe.supplement.ko}</div>
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <div className="text-xs text-slate-600">🎨 색상: <span className="font-medium">{dfe.supplement.color}</span></div>
+          <div className="text-xs text-slate-600">🧭 방향: <span className="font-medium">{dfe.supplement.direction}</span></div>
+          <div className="text-xs text-slate-600">🍽️ 맛: <span className="font-medium">{dfe.supplement.taste}</span></div>
+          <div className="text-xs text-slate-600">🏃 활동: <span className="font-medium">{dfe.supplement.activity}</span></div>
+        </div>
+        <p className="text-xs text-slate-600">{dfe.supplement.description}</p>
+      </div>
+    </>
+  ) : (
     <>
       {fe.excess.length > 0 && (
         <div className="mb-3">
@@ -394,7 +502,7 @@ function FiveElementInterpretation({ interp, isUnlocked, onUnlock }: { interp: a
                   <span className="font-bold text-sm text-red-700">{item.elementKo}</span>
                   <span className="text-xs text-red-500">({item.count}개)</span>
                 </div>
-                <TextWithLineBreaks text={item.short} className="text-sm text-slate-700" />
+                <TextWithLineBreaks text={item.detail} className="text-xs text-slate-600" />
               </div>
             ))}
           </div>
@@ -410,7 +518,7 @@ function FiveElementInterpretation({ interp, isUnlocked, onUnlock }: { interp: a
                   <span className="font-bold text-sm text-blue-700">{item.elementKo}</span>
                   <span className="text-xs text-blue-500">({item.count}개)</span>
                 </div>
-                <TextWithLineBreaks text={item.short} className="text-sm text-slate-700" />
+                <TextWithLineBreaks text={item.detail} className="text-xs text-slate-600" />
               </div>
             ))}
           </div>
@@ -421,7 +529,7 @@ function FiveElementInterpretation({ interp, isUnlocked, onUnlock }: { interp: a
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">🌿 오행 분석</h2>
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">🌿 오행 상세 분석</h2>
       <BlurredContent
         preview={
           <div className="bg-slate-50 rounded-xl p-3">
@@ -430,7 +538,7 @@ function FiveElementInterpretation({ interp, isUnlocked, onUnlock }: { interp: a
         }
         isUnlocked={isUnlocked}
         onUnlock={onUnlock}
-        label="오행 과다/부족 상세 분석"
+        label="가중치 기반 오행 상세 분석"
       >
         {fullContent}
       </BlurredContent>
@@ -440,18 +548,36 @@ function FiveElementInterpretation({ interp, isUnlocked, onUnlock }: { interp: a
 
 // ─── 십성 해석 (광고 콘텐츠) ────────────────────────────
 function TenStarInterpretation({ interp, isUnlocked, onUnlock }: { interp: any; isUnlocked: boolean; onUnlock: () => void }) {
-  if (!interp?.tenStars) return null
+  if (!interp?.tenStars && !interp?.detailedTenStars) return null
   const ts = interp.tenStars
-  if (!ts.dominant && ts.excess.length === 0 && ts.lack.length === 0) return null
+  const dts = interp.detailedTenStars
+  if (!dts && (!ts || (!ts.dominant && ts.excess.length === 0 && ts.lack.length === 0))) return null
 
-  const previewText = ts.dominant
-    ? `주요 십성: ${ts.dominant.star} (${ts.dominant.count}개)`
+  const previewText = ts?.dominant
+    ? `주요 십성: ${ts.dominant.star} (${ts.dominant.count}개)${dts ? ` · ${dts.patterns.length > 0 ? dts.patterns[0].name + ' 구조 발견' : ''}` : ''}`
     : '십성 분석 결과가 준비되었습니다'
+
+  const CAT_COLORS: Record<string, string> = {
+    '비겁': 'bg-yellow-50 border-yellow-300 text-yellow-800',
+    '식상': 'bg-green-50 border-green-300 text-green-800',
+    '재성': 'bg-blue-50 border-blue-300 text-blue-800',
+    '관성': 'bg-red-50 border-red-300 text-red-800',
+    '인성': 'bg-purple-50 border-purple-300 text-purple-800',
+  }
+
+  const STATUS_COLORS: Record<string, string> = {
+    '과다': 'text-red-600',
+    '강함': 'text-orange-600',
+    '보통': 'text-slate-600',
+    '약함': 'text-sky-600',
+    '없음': 'text-blue-600',
+  }
 
   const fullContent = (
     <>
-      {ts.dominant && (
-        <div className="bg-purple-50 rounded-xl p-4 border border-purple-200 mb-3">
+      {/* 기존: 주요 십성 */}
+      {ts?.dominant && (
+        <div className="bg-purple-50 rounded-xl p-4 border border-purple-200 mb-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-purple-700 font-bold text-sm">👑 주요 십성: {ts.dominant.star}</span>
             <span className="text-xs text-purple-500">({ts.dominant.count}개)</span>
@@ -465,27 +591,109 @@ function TenStarInterpretation({ interp, isUnlocked, onUnlock }: { interp: any; 
           </div>
         </div>
       )}
-      {ts.excess.length > 0 && (
+
+      {/* C2: 위치별 십성 해석 */}
+      {dts?.positionAnalysis && dts.positionAnalysis.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-slate-700 mb-2">📍 위치별 십성 해석</h3>
+          <div className="space-y-2">
+            {dts.positionAnalysis.map((pa: any, i: number) => (
+              <div key={i} className="bg-white rounded-lg p-3 border border-slate-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs font-bold">{pa.position}</span>
+                  <span className="text-xs text-slate-500">{pa.positionMeaning}</span>
+                </div>
+                <div className="text-xs font-medium text-slate-700 mb-1">
+                  {pa.target} → <span className="text-indigo-600 font-bold">{pa.star}</span>
+                </div>
+                <p className="text-xs text-slate-600">{pa.interpretation}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* C2: 카테고리 종합 분석 */}
+      {dts?.categoryAnalysis && (
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-slate-700 mb-2">📊 카테고리 분포</h3>
+          <div className="space-y-2">
+            {dts.categoryAnalysis.map((ca: any, i: number) => {
+              const colorClass = CAT_COLORS[ca.category] || 'bg-slate-50 border-slate-300 text-slate-800'
+              const statusColor = STATUS_COLORS[ca.status] || 'text-slate-600'
+              return (
+                <div key={i} className={`rounded-xl p-3 border ${colorClass}`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm">{ca.category}</span>
+                      <span className="text-[10px] opacity-60">{ca.hanja}</span>
+                      <span className="text-[10px] text-slate-500">{ca.theme}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold">{ca.count}개</span>
+                      <span className={`text-[10px] font-bold ${statusColor}`}>{ca.status}</span>
+                      <span className="text-[10px] text-slate-400">{ca.percent}%</span>
+                    </div>
+                  </div>
+                  {/* 비율 바 */}
+                  <div className="w-full bg-white/50 rounded-full h-1.5 mb-1">
+                    <div className="bg-current h-full rounded-full opacity-40" style={{ width: `${Math.max(3, ca.percent)}%` }}></div>
+                  </div>
+                  {ca.description && (
+                    <p className="text-xs opacity-80 mt-1">{ca.description}</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* C2: 십성 조합 패턴 */}
+      {dts?.patterns && dts.patterns.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-slate-700 mb-2">🔗 십성 조합 패턴</h3>
+          <div className="space-y-2">
+            {dts.patterns.map((p: any, i: number) => (
+              <div key={i} className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-3 border border-indigo-200">
+                <div className="font-bold text-sm text-indigo-700 mb-1">✨ {p.name}</div>
+                <p className="text-xs text-slate-600">{p.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* C2: 인생 테마 종합 */}
+      {dts?.lifeTheme && (
+        <div className="bg-indigo-50 rounded-xl p-3 border border-indigo-200 mb-4">
+          <div className="text-xs font-bold text-indigo-700 mb-1">🎯 인생 테마 종합</div>
+          <TextWithLineBreaks text={dts.lifeTheme} className="text-xs text-slate-600 leading-relaxed" />
+        </div>
+      )}
+
+      {/* 기존: 과다/부족 */}
+      {ts?.excess.length > 0 && (
         <div className="mb-3">
           <h3 className="text-xs font-bold text-red-600 mb-1.5">과다 십성</h3>
           <div className="space-y-1.5">
             {ts.excess.map((item: any, i: number) => (
               <div key={i} className="bg-red-50 rounded-lg p-2.5 border border-red-200 text-xs">
                 <span className="font-bold text-red-700">{item.star} ({item.count}개)</span>
-                <span className="text-slate-600 ml-2">{item.short}</span>
+                <span className="text-slate-600 ml-2">{item.text}</span>
               </div>
             ))}
           </div>
         </div>
       )}
-      {ts.lack.length > 0 && (
+      {ts?.lack.length > 0 && (
         <div>
           <h3 className="text-xs font-bold text-blue-600 mb-1.5">부족 십성</h3>
           <div className="space-y-1.5">
             {ts.lack.map((item: any, i: number) => (
               <div key={i} className="bg-blue-50 rounded-lg p-2.5 border border-blue-200 text-xs">
                 <span className="font-bold text-blue-700">{item.star} ({item.count}개)</span>
-                <span className="text-slate-600 ml-2">{item.short}</span>
+                <span className="text-slate-600 ml-2">{item.text}</span>
               </div>
             ))}
           </div>
@@ -496,7 +704,7 @@ function TenStarInterpretation({ interp, isUnlocked, onUnlock }: { interp: any; 
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">⭐ 십성 분석</h2>
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-3">⭐ 십성 상세 분석</h2>
       <BlurredContent
         preview={
           <div className="bg-purple-50 rounded-xl p-3">
@@ -505,7 +713,7 @@ function TenStarInterpretation({ interp, isUnlocked, onUnlock }: { interp: any; 
         }
         isUnlocked={isUnlocked}
         onUnlock={onUnlock}
-        label="십성 상세 분석 (주요/과다/부족)"
+        label="위치별 · 카테고리 · 조합 패턴 상세 분석"
       >
         {fullContent}
       </BlurredContent>
@@ -707,8 +915,8 @@ function GwiinSection({ gwiin }: { gwiin: any }) {
   )
 }
 
-// ─── 오늘의 운세 (광고 콘텐츠) ──────────────────────────
-function DailyFortuneSection({ interp, fortune, isUnlocked, onUnlock }: { interp: any; fortune: any; isUnlocked: boolean; onUnlock: () => void }) {
+// ─── 오늘의 운세 (맛보기 + 운세 허브 링크) ──────────────
+function DailyFortuneSection({ interp, fortune }: { interp: any; fortune: any; isUnlocked?: boolean; onUnlock?: () => void }) {
   if (!interp?.dailyFortune) return null
   const df = interp.dailyFortune
   const today = new Date()
@@ -717,9 +925,12 @@ function DailyFortuneSection({ interp, fortune, isUnlocked, onUnlock }: { interp
   const dailyGanjiName = fortune?.daily?.fortune?.ganjiName || ''
   const filledStars = Math.max(1, Math.min(5, df.rating))
 
-    const fullContent = (
-    <>
-      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 mb-3">
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-1">🔮 오늘의 운세</h2>
+      <p className="text-xs text-slate-400 mb-3">{dateStr}{dailyGanjiChar && ` · ${dailyGanjiChar}(${dailyGanjiName})일`}</p>
+
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4 mb-4">
         <div className="flex items-center justify-between mb-2">
           <span className="font-bold text-lg text-slate-800">{df.theme}</span>
           <div className="flex gap-0.5">
@@ -728,65 +939,13 @@ function DailyFortuneSection({ interp, fortune, isUnlocked, onUnlock }: { interp
             ))}
           </div>
         </div>
-        <p className="text-sm text-slate-700 font-medium">{df.short}</p>
+        <p className="text-sm text-slate-700 leading-relaxed">{df.short}</p>
       </div>
-      <div className="bg-slate-50 rounded-xl p-3 mb-3">
-        <TextWithLineBreaks text={df.detail} className="text-xs sm:text-sm text-slate-600 leading-relaxed" />
-      </div>
-      <div className="bg-indigo-50 rounded-xl p-3 mb-3 border border-indigo-200">
-        <div className="text-xs font-bold text-indigo-700 mb-1">💡 오늘의 조언</div>
-        <p className="text-xs text-slate-600">{df.advice}</p>
-      </div>
-      <div className="grid grid-cols-4 gap-1.5 mb-3">
-        <div className="bg-slate-50 rounded-lg p-2 text-center">
-          <div className="text-[10px] text-slate-400">🎨 색</div>
-          <div className="text-xs font-bold text-slate-700">{df.lucky.color}</div>
-        </div>
-        <div className="bg-slate-50 rounded-lg p-2 text-center">
-          <div className="text-[10px] text-slate-400">🧭 방향</div>
-          <div className="text-xs font-bold text-slate-700">{df.lucky.direction}</div>
-        </div>
-        <div className="bg-slate-50 rounded-lg p-2 text-center">
-          <div className="text-[10px] text-slate-400">🔢 숫자</div>
-          <div className="text-xs font-bold text-slate-700">{df.lucky.number}</div>
-        </div>
-        <div className="bg-slate-50 rounded-lg p-2 text-center">
-          <div className="text-[10px] text-slate-400">⏰ 시간</div>
-          <div className="text-xs font-bold text-slate-700">{df.lucky.time}</div>
-        </div>
-      </div>
-      <div className="bg-red-50 rounded-xl p-3 border border-red-200">
-        <div className="text-xs font-bold text-red-600 mb-1">⚠️ 주의사항</div>
-        <p className="text-xs text-slate-600">{df.caution}</p>
-      </div>
-    </>
-  )
 
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-      <h2 className="text-base sm:text-lg font-bold text-slate-800 mb-1">🔮 오늘의 운세</h2>
-      <p className="text-xs text-slate-400 mb-3">{dateStr}{dailyGanjiChar && ` · ${dailyGanjiChar}(${dailyGanjiName})일`}</p>
-
-      <BlurredContent
-        preview={
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-lg text-slate-800">{df.theme}</span>
-              <div className="flex gap-0.5">
-                {Array.from({ length: 5 }, (_, i) => (
-                  <span key={i} className={`text-lg ${i < filledStars ? 'text-amber-400' : 'text-slate-200'}`}>★</span>
-                ))}
-              </div>
-            </div>
-            <p className="text-sm text-slate-700 font-medium">{df.short}</p>
-          </div>
-        }
-        isUnlocked={isUnlocked}
-        onUnlock={onUnlock}
-        label="오늘의 운세 상세 + 행운 정보"
-      >
-        {fullContent}
-      </BlurredContent>
+      <a href="/fortune"
+        className="block w-full py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-sm text-center rounded-xl transition border border-indigo-200">
+        📅 일운 · 월운 · 세운 자세히 보기 →
+      </a>
     </div>
   )
 }
@@ -1026,12 +1185,10 @@ export default function SajuResult({ result }: { result: any }) {
         onUnlock={() => handleUnlock('strength')}
       />
 
-      {/* ⑪ 오늘의 운세 (🔓 광고) */}
+      {/* ⑪ 오늘의 운세 (맛보기 + 운세 허브 링크) */}
       <DailyFortuneSection
         interp={interpretation}
         fortune={fortune}
-        isUnlocked={!!unlockedSections['dailyFortune']}
-        onUnlock={() => handleUnlock('dailyFortune')}
       />
 
       {/* ⑫ 경고 */}
