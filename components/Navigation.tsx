@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const NAV_ITEMS = [
+  { href: '/learn', label: '배우기' },
   { href: '/board', label: '게시판' },
   { href: '/about', label: '소개' },
 ]

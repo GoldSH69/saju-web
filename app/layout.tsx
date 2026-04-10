@@ -4,9 +4,24 @@ import Navigation from '@/components/Navigation'
 import VisitorTracker from '@/components/VisitorTracker'
 
 export const metadata: Metadata = {
-  title: '사주명리학 - 무료 사주팔자 계산',
-  description: '정확한 사주팔자 계산과 운세 서비스. 만세력 기반 무료 사주 분석.',
-  keywords: '사주, 사주팔자, 만세력, 운세, 사주명리학, 오행, 십성',
+  metadataBase: new URL('https://saju-web.vercel.app'), // 배포 후 실제 도메인으로 변경
+  title: {
+    default: '사주명리학 - 무료 사주팔자 계산',
+    template: '%s | 사주명리학',
+  },
+  description: '정확한 사주팔자 계산과 운세 서비스. 만세력 기반 무료 사주 분석. 사주명리학 기초 교육까지.',
+  keywords: '사주, 사주팔자, 만세력, 운세, 사주명리학, 오행, 십성, 천간, 지지, 사주배우기',
+  openGraph: {
+    type: 'website',
+    locale: 'ko_KR',
+    siteName: '사주명리학',
+    title: '사주명리학 - 무료 사주팔자 계산',
+    description: '정확한 만세력 기반 무료 사주 분석과 사주명리학 기초 교육',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({

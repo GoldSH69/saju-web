@@ -1,61 +1,15 @@
-'use client'
+import { Metadata } from 'next'
+import HomeClient from '@/components/HomeClient'
 
-import { useState } from 'react'
-import SajuForm from '@/components/SajuForm'
-import SajuResult from '@/components/SajuResult'
+export const metadata: Metadata = {
+  title: '무료 사주팔자 계산 - 만세력 기반 사주 분석',
+  description: '정확한 만세력 기반 무료 사주팔자 계산. 오행 분포, 십성 분석, 대운·세운, 오늘의 운세까지 한 번에 확인하세요.',
+  openGraph: {
+    title: '무료 사주팔자 계산 - 만세력 기반 사주 분석',
+    description: '정확한 만세력 기반 무료 사주팔자 계산. 오행·십성·대운·세운·오늘의 운세까지.',
+  },
+}
 
 export default function Home() {
-  const [result, setResult] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function handleSubmit(data: any) {
-    setIsLoading(true)
-    setError(null)
-    setResult(null)
-
-    try {
-      const res = await fetch('/api/saju/calculate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || '계산 실패')
-      }
-
-      const json = await res.json()
-      setResult(json)
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  return (
-    <div className="max-w-4xl mx-auto px-4">
-      {/* 타이틀 */}
-      <h1 className="text-center text-xl font-bold text-slate-700 py-4">
-        만세력 기반 사주 분석 및 오늘의 운세
-      </h1>
-
-      {/* 입력 폼 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
-        <SajuForm onSubmit={handleSubmit} isLoading={isLoading} />
-      </div>
-
-      {/* 에러 */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-          <p className="text-red-600">❌ {error}</p>
-        </div>
-      )}
-
-      {/* 결과 */}
-      {result && <SajuResult result={result} />}
-    </div>
-  )
+  return <HomeClient />
 }
