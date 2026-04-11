@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 
 const NAV_ITEMS = [
   { href: '/saved', label: '📋 사주리스트' },
+  { href: '/compatibility', label: '💕 궁합' },
   { href: '/fortune', label: '🌟 운세' },
   { href: '/learn', label: '📚 배우기' },
   { href: '/board', label: '💬 게시판' },

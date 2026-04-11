@@ -10,6 +10,7 @@ interface Category {
   description: string | null
   allow_guest: boolean
   admin_only: boolean
+  is_visible: boolean
   post_count: number
 }
 

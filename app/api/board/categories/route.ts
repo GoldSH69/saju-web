@@ -8,6 +8,7 @@ export async function GET() {
     const { data: categories, error } = await supabase
       .from('board_categories')
       .select('*')
+      .eq('is_visible', true)
       .order('sort_order')
 
     if (error) throw error

@@ -30,4 +30,6 @@ export { getGwiinBranches, isGwiin, analyzeGwiin, checkFortuneGwiin, } from './s
 export type { GwiinPair, BranchGwiinStatus, FortuneGwiinResult, GwiinAnalysis, } from './saju/gwiin';
 export { generateInterpretation, getDayStemText, getFiveElementText, analyzeFiveElementTexts, getTenStarText, analyzeTenStarTexts, getStrengthText, getDailyFortuneText, getShortDayStemInterpretation, getShortStrengthInterpretation, getShortDailyFortune, DAY_STEM_TEXTS, FIVE_ELEMENT_TEXTS, TEN_STAR_TEXTS, STRENGTH_TEXTS, DAILY_FORTUNE_TEXTS, } from './saju/interpretations';
 export type { InterpretationResult, DayStemText, FiveElementText, TenStarText, StrengthText, DailyFortuneText, } from './saju/interpretations';
+export { analyzeCompatibility } from './saju/compatibility';
+export type { CompatibilityGrade, CompatibilityItem, CompatibilityResult, } from './saju/compatibility';
 //# sourceMappingURL=index.d.ts.map

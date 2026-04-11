@@ -182,7 +182,7 @@ export default function HomeClient() {
   return (
     <div className="max-w-4xl mx-auto px-4">
       <h1 className="text-center text-xl font-bold text-slate-700 py-4">
-        만세력 기반 사주 분석 및 오늘의 운세
+        만세력 기반 무료 사주 분석
       </h1>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">

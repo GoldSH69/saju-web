@@ -11,6 +11,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     {
+      url: `${BASE_URL}/compatibility`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
       url: `${BASE_URL}/fortune`,
       lastModified: new Date(),
       changeFrequency: 'daily',
@@ -48,6 +54,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${BASE_URL}/learn/ten-stars`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+        {
+      url: `${BASE_URL}/learn/compatibility-basics`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/learn/compatibility-details`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.7,

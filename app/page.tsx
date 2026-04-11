@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import { Suspense } from 'react'
 import HomeClient from '@/components/HomeClient'
 
 export const metadata: Metadata = {
@@ -11,5 +12,9 @@ export const metadata: Metadata = {
 }
 
 export default function Home() {
-  return <HomeClient />
+  return (
+    <Suspense fallback={<div className="text-center py-20">로딩 중...</div>}>
+      <HomeClient />
+    </Suspense>
+  )
 }
