@@ -143,7 +143,7 @@ export default function BoardWritePage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-4">
+      <form onSubmit={handleSubmit} autoComplete="off" className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm text-slate-500 mb-1">닉네임 *</label>
@@ -160,16 +160,19 @@ export default function BoardWritePage() {
           <div>
             <label className="block text-sm text-slate-500 mb-1">비밀번호 * (숫자 4자리)</label>
             <input
-              type="password"
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
               value={password}
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, '').slice(0, 4)
                 setPassword(val)
               }}
-              placeholder="1234"
+              placeholder="••••"
               maxLength={4}
               required
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-700 text-sm focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200"
+              autoComplete="one-time-code"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-700 text-sm tracking-[0.3em] focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-200"
             />
           </div>
         </div>
