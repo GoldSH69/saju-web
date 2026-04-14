@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next'
 
-const BASE_URL = 'https://saju-web.vercel.app'
+const BASE_URL = 'https://mindground.org'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

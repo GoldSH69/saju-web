@@ -105,7 +105,7 @@ export default function AboutPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
         <h2 className="text-lg font-bold text-slate-800 mb-3">📮 문의</h2>
         <div className="text-sm text-slate-600 space-y-2">
-          <p>서비스 이용 중 문의사항이 있으시면 게시판을 이용해주세요.</p>
+          <p>서비스 이용 중 문의사항이 있으시면 게시판 및 공식 이메일 official@mindground.org를 이용해주세요.</p>
           <Link href="/board" className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
             게시판 바로가기
           </Link>

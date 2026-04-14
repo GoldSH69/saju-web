@@ -159,7 +159,7 @@ export default function BoardWritePage() {
           </div>
           <div>
             <label className="block text-sm text-slate-500 mb-1">비밀번호 * (숫자 4자리)</label>
-            <input
+                        <input
               type="tel"
               inputMode="numeric"
               pattern="[0-9]*"

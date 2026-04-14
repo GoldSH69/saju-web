@@ -4,7 +4,7 @@ import Navigation from '@/components/Navigation'
 import VisitorTracker from '@/components/VisitorTracker'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://saju-web.vercel.app'), // 배포 후 실제 도메인으로 변경
+  metadataBase: new URL('https://mindground.org'), // 배포 후 실제 도메인으로 변경
   title: {
     default: '사주명리학 - 무료 사주팔자 계산',
     template: '%s | 사주명리학',
@@ -48,7 +48,7 @@ export default function RootLayout({
             {children}
           </main>
           <footer className="bg-slate-800 text-center py-6">
-            <p className="text-slate-300 text-sm">© 2026 사주명리. Built by @shlee.</p>
+            <p className="text-slate-300 text-sm">© 2026 MindGround. Built by @shlee.</p>
             <p className="text-slate-500 text-xs mt-1">본 서비스는 참고용 정보 제공을 목적으로 하며, 전문 상담을 대체하지 않습니다.</p>
           </footer>
         </div>

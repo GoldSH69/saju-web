@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/'],
       },
     ],
-    sitemap: 'https://saju-web.vercel.app/sitemap.xml',
+    sitemap: 'https://mindground.org/sitemap.xml',
   }
 }
