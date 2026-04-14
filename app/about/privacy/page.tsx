@@ -17,7 +17,7 @@ export default function PrivacyPage() {
             <h2 className="text-base font-bold text-slate-800 mb-2">1. 개인정보 수집 항목</h2>
             <p className="mb-2">본 서비스는 사주 분석을 위해 다음 정보를 입력받습니다:</p>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>닉네임 (년, 월, 일)</li>
+              <li>닉네임</li>
               <li>생년월일 (년, 월, 일)</li>
               <li>출생 시간 (시, 분) — 선택 사항</li>
               <li>성별</li>
@@ -73,7 +73,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-base font-bold text-slate-800 mb-2">7. 개인정보 보호책임자 MindGround</h2>
-            <p>개인정보 관련 문의는 게시판 또는 공식 이메일 official@mindground.org를 이용해주시기 바랍니다.</p>
+            <p>개인정보 관련 문의는 게시판 또는 공식이메일 official@mindground.org를 이용해주시기 바랍니다.</p>
           </section>
 
           <section>

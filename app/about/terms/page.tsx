@@ -86,6 +86,7 @@ export default function TermsPage() {
 
           <div className="pt-4 border-t border-slate-200 text-xs text-slate-400">
             <p>시행일: 2026년 1월 1일</p>
+            <p>서비스 이용 중 문의사항이 있으시면 게시판 및 공식 이메일 official@mindground.org를 이용해주세요.</p>
           </div>
         </div>
       </div>
