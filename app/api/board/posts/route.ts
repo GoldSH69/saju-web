@@ -25,6 +25,8 @@ async function verifyRecaptcha(token: string): Promise<boolean> {
 // ────────────────────────────────────
 // GET: 글 목록 (?category=slug&page=1&limit=20)
 // ────────────────────────────────────
+// app/api/board/posts/route.ts
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createAdminClient()
@@ -39,42 +41,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'category 파라미터 필요' }, { status: 400 })
     }
 
-    const { data: category, error: catError } = await supabase
-      .from('board_categories')
-      .select('*')
-      .eq('slug', categorySlug)
-      .single()
+    const { data, error } = await supabase.rpc('get_posts_by_category', {
+      p_slug: categorySlug,
+      p_limit: limit,
+      p_offset: offset,
+    })
 
-    if (catError || !category) {
+    if (error) throw error
+    if (data?.error === 'not_found') {
       return NextResponse.json({ error: '카테고리를 찾을 수 없습니다' }, { status: 404 })
     }
 
-    const { count } = await supabase
-      .from('board_posts')
-      .select('*', { count: 'exact', head: true })
-      .eq('category_id', category.id)
-      .is('deleted_at', null)
-
-    const { data: posts, error: postsError } = await supabase
-      .from('board_posts')
-      .select(
-        'id, title, author_type, guest_nickname, is_pinned, view_count, admin_reply, created_at'
-      )
-      .eq('category_id', category.id)
-      .is('deleted_at', null)
-      .order('is_pinned', { ascending: false })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
-
-    if (postsError) throw postsError
-
     return NextResponse.json({
-      category,
-      posts: posts || [],
-      total: count || 0,
+      category: data.category,
+      posts: data.posts,
+      total: data.total,
       page,
       limit,
-      totalPages: Math.ceil((count || 0) / limit),
+      totalPages: Math.ceil(data.total / limit),
     })
   } catch (error) {
     console.error('Posts fetch error:', error)

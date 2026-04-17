@@ -12,37 +12,16 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const { id } = await params
     const supabase = createAdminClient()
 
-    const { data: post, error } = await supabase
-      .from('board_posts')
-      .select('id, category_id, title, content, author_type, guest_nickname, is_pinned, view_count, admin_reply, admin_reply_at, created_at, updated_at')
-      .eq('id', id)
-      .is('deleted_at', null)
-      .single()
+    const { data, error } = await supabase.rpc('get_post_detail', {
+      p_id: id,
+    })
 
-    if (error || !post) {
+    if (error) throw error
+    if (!data) {
       return NextResponse.json({ error: '게시글을 찾을 수 없습니다' }, { status: 404 })
     }
 
-    // 조회수 +1
-    await supabase
-      .from('board_posts')
-      .update({ view_count: post.view_count + 1 })
-      .eq('id', id)
-
-    // 카테고리 정보 조회
-    const { data: category } = await supabase
-      .from('board_categories')
-      .select('slug, name')
-      .eq('id', post.category_id)
-      .single()
-
-    return NextResponse.json({
-      post: {
-        ...post,
-        view_count: post.view_count + 1,
-        category: category || null,
-      },
-    })
+    return NextResponse.json({ post: data })
   } catch (error) {
     console.error('Post detail error:', error)
     return NextResponse.json({ error: '게시글 조회 실패' }, { status: 500 })
