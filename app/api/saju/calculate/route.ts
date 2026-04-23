@@ -4,6 +4,10 @@ import type { CalculateInput } from 'saju-engine'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+function getKSTDate(): Date {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }))
+}
+
 export async function POST(request: NextRequest) {
   try {
     // ── Rate Limit: IP당 1분에 10회 ──
@@ -42,9 +46,9 @@ export async function POST(request: NextRequest) {
       minute: birthTimeUnknown ? null : (minute !== null ? Number(minute) : null),
       gender: gender || 'male',
       timeOption: timeOption || 'standard30',
-      fortuneTargetYear: new Date().getFullYear(),
-      fortuneTargetMonth: new Date().getMonth() + 1,
-      fortuneTargetDay: new Date().getDate(),
+      fortuneTargetYear: getKSTDate().getFullYear(),
+      fortuneTargetMonth: getKSTDate().getMonth() + 1,
+      fortuneTargetDay: getKSTDate().getDate(),
     }
 
     const result = calculateSaju(input)
