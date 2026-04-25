@@ -1,4 +1,4 @@
-import Script from 'next/script';
+import { GoogleAnalytics } from '@next/third-parties/google';
 import type { Metadata } from 'next'
 import './globals.css'
 import Navigation from '@/components/Navigation'
@@ -59,7 +59,10 @@ export default function RootLayout({
             <p className="text-slate-300 text-sm">© 2026 MindGround. Built by @shlee.</p>
             <p className="text-slate-500 text-xs mt-1">본 서비스는 참고용 정보 제공을 목적으로 하며, 전문 상담을 대체하지 않습니다.</p>
           </footer>
-        </div>
+                </div>
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
+        )}
       </body>
     </html>
   )

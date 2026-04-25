@@ -10,6 +10,7 @@
     "sync-engine": "cd ../saju-engine && npm run build && cd ../saju-web && rm -rf saju-engine-lib && cp -r ../saju-engine/dist saju-engine-lib && echo '✅ saju-engine 동기화 완료'"
   },
   "dependencies": {
+    "@next/third-parties": "^16.2.4",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.101.0",
     "next": "16.2.1",
