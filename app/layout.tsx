@@ -57,9 +57,17 @@ export default function RootLayout({
           </main>
           <footer className="bg-slate-800 text-center py-6">
             <p className="text-slate-300 text-sm">© 2026 MindGround. Built by @shlee.</p>
-            <p className="text-slate-500 text-xs mt-1">본 서비스는 참고용 정보 제공을 목적으로 하며, 전문 상담을 대체하지 않습니다.</p>
+            <a
+              href="https://mindground-eosin.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-slate-400 hover:text-white text-sm mt-3 transition-colors"
+            >
+              ✨ 운세·심리·AI·생활정보 블로그 보러가기 →
+            </a>
+            <p className="text-slate-500 text-xs mt-2">본 서비스는 참고용 정보 제공을 목적으로 하며, 전문 상담을 대체하지 않습니다.</p>
           </footer>
-                </div>
+        </div>
         {process.env.NEXT_PUBLIC_GA_ID && (
           <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
         )}
