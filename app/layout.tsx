@@ -61,9 +61,7 @@ export default function RootLayout({
             <p className="text-slate-500 text-xs mt-2">본 서비스는 참고용 정보 제공을 목적으로 하며, 전문 상담을 대체하지 않습니다.</p>
           </footer>
         </div>
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID} />
-        )}
+        
       </body>
     </html>
   )
