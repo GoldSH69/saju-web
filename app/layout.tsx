@@ -33,13 +33,6 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        {/* 애드센스 소유권 확인 코드 */}
-        <script 
-          async 
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6887375404643088"
-          crossOrigin="anonymous">        
-        </script>
-
         {/* 한자 전용 웹폰트 (Noto Serif KR - Google Fonts, OFL 무료) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
